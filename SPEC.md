@@ -61,14 +61,14 @@ type Rule = {
 } & (
   | { type: "no_fish_before_office_days" }
   | { type: "no_consecutive_same_protein"; maxConsecutiveDays: number }
-  | { type: "max_spicy_level_with_guests"; maxSpicyLevel: 1 | 2 | 3 }
+  | { type: "no_spicy_with_guests" } // Binary: no spicy dishes when guests present
   | { type: "prefer_easy_on_dual_office_days" }
   | { type: "prioritize_ingredient"; ingredient: string } // e.g., "beef", "zucchini"
   | { type: "dish_cooldown_period"; cooldownDays: number }
 );
 
 // Example instances:
-// { type: "max_spicy_level_with_guests", maxSpicyLevel: 2, pointsDeducted: 30 }
+// { type: "no_spicy_with_guests", pointsDeducted: 30 }
 // { type: "prioritize_ingredient", ingredient: "beef", pointsAwarded: 20 }
 ```
 
@@ -113,7 +113,7 @@ type Rule = {
 ### 3. Rules Engine
 
 - Toggle rules on/off
-- Adjust rule parameters (e.g., max spiciness level with guests)
+- Adjust rule parameters (e.g., max consecutive days for same protein, cooldown days)
 - Customize points deducted/awarded for each rule (not hard-coded)
 - Severity system (hard constraints vs. soft preferences)
 
@@ -121,7 +121,7 @@ type Rule = {
 
 1. **No fish before office days** (`no_fish_before_office_days`): If leftovers will be taken to office, exclude fish dishes
 2. **Protein variety** (`no_consecutive_same_protein`): Avoid same protein 2+ days in a row (configurable max consecutive days)
-3. **Guest-friendly** (`max_spicy_level_with_guests`): Limit spiciness when guests are present (configurable max level)
+3. **Guest-friendly** (`no_spicy_with_guests`): Exclude spicy dishes when guests are present (any spiciness > 0)
 4. **Ingredient prioritization** (`prioritize_ingredient`): Prioritize dishes with specific ingredients (e.g., "beef on special" or "need to finish zucchini")
 5. **Easy meals on busy days** (`prefer_easy_on_dual_office_days`): When both go to office next day, prefer low-time meals
 6. **Cooldown period** (`dish_cooldown_period`): Don't repeat the same dish within X days (configurable)
@@ -254,7 +254,7 @@ Legend: ✓ = Enabled (auto-suggest), ⚙ = Manual only, ✗ = Disabled
 ├──────────────────────────────────────────────────┤
 │  ☑ No fish before office days                   │
 │  ☑ Vary proteins (max 1 day repeat)        [▾]  │
-│  ☑ Max spice level with guests: 2          [▾]  │
+│  ☑ No spicy dishes with guests                  │
 │  ☑ Easy meals on dual-office days               │
 │  ☑ Prioritize ingredient: [Beef ▾]         [▾]  │
 │  ☑ Don't repeat dishes within: 5 days      [▾]  │
@@ -378,7 +378,7 @@ CREATE TABLE rules_config (
   rule_type VARCHAR(100) CHECK (rule_type IN (
     'no_fish_before_office_days',
     'no_consecutive_same_protein',
-    'max_spicy_level_with_guests',
+    'no_spicy_with_guests',
     'prefer_easy_on_dual_office_days',
     'prioritize_ingredient',
     'dish_cooldown_period'
