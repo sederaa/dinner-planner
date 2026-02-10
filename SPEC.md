@@ -24,7 +24,7 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
   spiciness: number; // 0-5 scale (0 = not spicy, 5 = very spicy)
   time: "low" | "medium" | "high"; // Combined prep time and difficulty
   keyIngredients: string[]; // Array of main ingredients
-  enabled: boolean; // Whether this dish can be suggested
+  status: "enabled" | "manual_only" | "disabled"; // enabled: can be auto-suggested, manual_only: only manual selection, disabled: hidden
   notes?: string;
   tags?: string[]; // Optional tags for categorization
 }
@@ -36,39 +36,40 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 {
   id: string;
   date: Date;
-  mainDishId: string;
+  mainDishId: string | "LEFTOVERS" | null; // Special value "LEFTOVERS" for leftover dinners, null if blocked
   sideDishIds: string[]; // Array of side dish IDs
   dessertDishId?: string; // Optional dessert
   hasGuests: boolean;
   personAGoesToOffice: boolean; // Next day
   personBGoesToOffice: boolean; // Next day
   locked: boolean; // If true, auto-suggest won't replace this day
+  isBlocked: boolean; // If true, day is intentionally kept clear (no cooking)
   notes?: string;
 }
 ```
 
-### Planning Rules
+### Rules
 
 ```typescript
-{
+type Rule = {
   id: string;
   name: string;
   enabled: boolean;
   severity: "constraint" | "preference"; // How strict is this rule
-  ruleType:
-    | "no_fish_before_office_days"
-    | "no_consecutive_same_protein"
-    | "max_spicy_level_with_guests"
-    | "prefer_easy_on_dual_office_days"
-    | "prioritize_ingredient" // Generalized from protein-only
-    | "dish_cooldown_period";
-  parameters: Record<string, any>; // Rule-specific configuration
-  // Examples:
-  // { maxConsecutiveDays: 1 } for no_consecutive_same_protein
-  // { maxSpicyLevel: 2 } for max_spicy_level_with_guests
-  // { ingredient: "beef" } for prioritize_ingredient
-  // { cooldownDays: 5 } for dish_cooldown_period
-}
+  pointsDeducted?: number; // Points deducted when rule is violated (customizable)
+  pointsAwarded?: number; // Points awarded when rule is satisfied (customizable)
+} & (
+  | { type: "no_fish_before_office_days" }
+  | { type: "no_consecutive_same_protein"; maxConsecutiveDays: number }
+  | { type: "max_spicy_level_with_guests"; maxSpicyLevel: 1 | 2 | 3 }
+  | { type: "prefer_easy_on_dual_office_days" }
+  | { type: "prioritize_ingredient"; ingredient: string } // e.g., "beef", "zucchini"
+  | { type: "dish_cooldown_period"; cooldownDays: number }
+);
+
+// Example instances:
+// { type: "max_spicy_level_with_guests", maxSpicyLevel: 2, pointsDeducted: 30 }
+// { type: "prioritize_ingredient", ingredient: "beef", pointsAwarded: 20 }
 ```
 
 ### User Settings
@@ -91,7 +92,7 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 - Add/edit/delete dishes (mains, sides, desserts)
 - View all dishes in a searchable/filterable list
 - Quick filters by type (main/side/dessert), protein type, time, spice level
-- Enable/disable dishes for suggestions
+- Set dish status: enabled (auto-suggest), manual_only (only manual selection), or disabled (hidden)
 - Manually entered only (no imports at this stage)
 
 ### 2. Weekly/Bi-weekly Planner View
@@ -106,11 +107,14 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 - Mark next-day office attendance for both people
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
+- **Special dishes**: "Leftovers" can be dragged onto days for leftover dinners (no fresh cooking)
+- **Block day**: Ability to block a day to keep it intentionally clear
 
 ### 3. Rules Engine
 
 - Toggle rules on/off
 - Adjust rule parameters (e.g., max spiciness level with guests)
+- Customize points deducted/awarded for each rule (not hard-coded)
 - Severity system (hard constraints vs. soft preferences)
 
 **Core Rules to Implement:**
@@ -165,6 +169,10 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 - **Framework**: React 18+ with TypeScript + Vite
 - **UI Components**: shadcn/ui (built on Radix UI + TailwindCSS)
 - **Drag & Drop**: @dnd-kit/core
+- **Testing**: Vitest + React Testing Library for unit tests
+  - Priority: Rules engine logic
+  - Priority: Auto-suggestion algorithm
+  - Priority: Other business logic
 - **Backend**: Supabase (PostgreSQL + auto-generated REST API)
 - **Deployment**: Docker container on NAS
 
@@ -176,7 +184,9 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 
 - Single Dockerfile with multi-stage build
 - Frontend: Nginx to serve static React build
-- Connects to Supabase cloud (no authentication needed)
+- Connects to Supabase cloud
+  - **Authentication**: Developer authenticates to Supabase (using project URL and anon key)
+  - No end-user authentication required (single-user app)
 
 ## User Interface Design
 
@@ -220,23 +230,27 @@ Legend: 🏢 = Office next day, 👥 = Guests, 🔒 = Locked, ☐ = Select
 │  │ Main | Chicken | Spice:2 | Time:Low       │ │
 │  └────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────┐ │
-│  │ 🥗 Green Salad                 [Edit] ✓    │ │
+│  │ 🥗 Green Salad                 [Edit] ⚙    │ │
 │  │ Side | Veg | Spice:0 | Time:Low            │ │
 │  └────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🐟 Grilled Salmon              [Edit] ✗    │ │
 │  │ Main | Fish | Spice:0 | Time:Medium        │ │
 │  └────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────┐ │
+│  │ 🍽️ Leftovers                   [Special]   │ │
+│  │ Special dish for leftover dinners          │ │
+│  └────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────┘
 
-Legend: ✓ = Enabled for suggestions, ✗ = Disabled
+Legend: ✓ = Enabled (auto-suggest), ⚙ = Manual only, ✗ = Disabled
 ```
 
 #### 3. Rules Configuration View
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Planning Rules                                  │
+│  Rules                                           │
 ├──────────────────────────────────────────────────┤
 │  ☑ No fish before office days                   │
 │  ☑ Vary proteins (max 1 day repeat)        [▾]  │
@@ -276,7 +290,9 @@ not just protein (e.g., zucchini, tomatoes, etc.)
 4. **Managing dishes:**
    - Go to Dishes view
    - Add/edit/delete dishes via form
-   - Toggle "enabled" status to include/exclude from suggestions
+   - Set status: "enabled" (auto-suggest), "manual_only" (manual selection only), or "disabled" (hidden)
+   - Drag "Leftovers" special dish onto days for leftover dinners
+   - Use "Block Day" feature to keep specific days clear
    - Filter by type (main/side/dessert), protein, time, etc.
 
 5. **Viewing history:**
@@ -291,15 +307,17 @@ not just protein (e.g., zucchini, tomatoes, etc.)
 Each potential dish for each day gets scored (0-100):
 
 - Start at 100
-- Apply deductions for rule violations:
-  - Hard constraint broken: -50 points (e.g., fish before office)
-  - Same protein as yesterday: -20 points
-  - Same dish within cooldown: -100 points (exclude)
-  - Spicy with guests: -30 points
-  - Hard meal on busy day: -15 points
-- Apply bonuses:
-  - Priority protein: +20 points
-  - Haven't had this in a while: +10 points
+- Apply deductions for rule violations (using rule's `pointsDeducted` value):
+  - Hard constraint broken: deduct configured points (e.g., -50 for fish before office)
+  - Same protein as yesterday: deduct configured points (default: -20)
+  - Same dish within cooldown: deduct configured points (default: -100, effectively excludes)
+  - Spicy with guests: deduct configured points (default: -30)
+  - Hard meal on busy day: deduct configured points (default: -15)
+- Apply bonuses (using rule's `pointsAwarded` value):
+  - Priority ingredient: award configured points (default: +20)
+  - Haven't had this in a while: award configured points (default: +10)
+
+**Note**: All point values are customizable per rule, not hard-coded.
 
 Select highest-scoring dish that's above threshold (e.g., 50 points).
 
@@ -325,7 +343,7 @@ CREATE TABLE dishes (
   spiciness INTEGER CHECK (spiciness >= 0 AND spiciness <= 5),
   time VARCHAR(20) CHECK (time IN ('low', 'medium', 'high')), -- Combined prep time + difficulty
   key_ingredients TEXT[], -- PostgreSQL array
-  enabled BOOLEAN DEFAULT TRUE, -- Whether this dish can be auto-suggested
+  status VARCHAR(20) CHECK (status IN ('enabled', 'manual_only', 'disabled')) DEFAULT 'enabled',
   notes TEXT,
   tags TEXT[],
   created_at TIMESTAMP DEFAULT NOW(),
@@ -336,13 +354,15 @@ CREATE TABLE dishes (
 CREATE TABLE meal_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   date DATE NOT NULL,
-  main_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL,
+  main_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL, -- NULL if blocked day
+  main_dish_type VARCHAR(20) CHECK (main_dish_type IN ('dish', 'leftovers')), -- 'leftovers' for special leftover entry
   side_dish_ids UUID[], -- Array of side dish IDs
   dessert_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL,
   has_guests BOOLEAN DEFAULT FALSE,
   person_a_office_next_day BOOLEAN DEFAULT FALSE,
   person_b_office_next_day BOOLEAN DEFAULT FALSE,
   locked BOOLEAN DEFAULT FALSE, -- Prevents auto-suggest from overwriting
+  is_blocked BOOLEAN DEFAULT FALSE, -- Day intentionally kept clear
   notes TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
@@ -363,7 +383,9 @@ CREATE TABLE rules_config (
     'prioritize_ingredient',
     'dish_cooldown_period'
   )),
-  parameters JSONB NOT NULL, -- Rule-specific parameters
+  parameters JSONB NOT NULL, -- Rule-specific parameters (e.g., maxSpicyLevel, ingredient, cooldownDays)
+  points_deducted INTEGER, -- Customizable points deducted when rule is violated
+  points_awarded INTEGER, -- Customizable points awarded when rule is satisfied
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -381,9 +403,13 @@ CREATE TABLE user_settings (
 ```sql
 CREATE INDEX idx_meal_plans_date ON meal_plans(date);
 CREATE INDEX idx_dishes_protein ON dishes(protein);
-CREATE INDEX idx_dishes_enabled ON dishes(enabled);
+CREATE INDEX idx_dishes_status ON dishes(status);
 CREATE INDEX idx_dishes_type ON dishes USING GIN(type); -- GIN index for array
 ```
+
+### Notes on Supabase Schema
+
+Since you're using Supabase cloud, you can create these tables directly in the Supabase SQL Editor. The table schema SQL is provided for reference and documentation, but Supabase will handle the database management. You won't need to maintain separate SQL files or migration scripts unless you want version control for schema changes.
 
 ## Development Phases
 
@@ -414,17 +440,18 @@ CREATE INDEX idx_dishes_type ON dishes USING GIN(type); -- GIN index for array
 
 ### Phase 4: Rules & Auto-Suggest (Days 5-6)
 
-- [ ] Rules configuration UI
+- [ ] Rules configuration UI with customizable points
 - [ ] Implement all 6 core rules
 - [ ] Build scoring/ranking algorithm
 - [ ] Auto-suggest functionality (all days / selected days)
 - [ ] Rule violation indicators
 - [ ] Swap/alternative suggestions
+- [ ] Unit tests for rules engine and auto-suggestion logic
 
 ### Phase 5: Polish & History (Day 7)
 
 - [ ] Historical view for past meal plans
-- [ ] Responsive design refinements
+- [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
 - [ ] Loading states & error handling
 - [ ] User settings management
 
@@ -491,8 +518,8 @@ Based on user feedback:
 
 ## Out of Scope (For Now)
 
-- Authentication/multi-user support
-- Mobile native app (responsive web app is sufficient)
+- Authentication/multi-user support (single-user app, developer authenticates to Supabase)
+- Mobile native app (responsive web app with mobile browser support is in scope)
 - Nutritional information/calorie tracking
 - Detailed ingredient quantities
 - Recipe instructions/cooking steps (just key ingredients)
