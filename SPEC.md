@@ -56,8 +56,7 @@ type Rule = {
   name: string;
   enabled: boolean;
   severity: "constraint" | "preference"; // How strict is this rule
-  pointsDeducted?: number; // Points deducted when rule is violated (customizable)
-  pointsAwarded?: number; // Points awarded when rule is satisfied (customizable)
+  points?: number; // Points impact: negative = deducted when violated, positive = awarded when satisfied
 } & (
   | { type: "no_fish_before_office_days" }
   | { type: "no_consecutive_same_protein"; maxConsecutiveDays: number }
@@ -68,8 +67,8 @@ type Rule = {
 );
 
 // Example instances:
-// { type: "no_spicy_with_guests", pointsDeducted: 30 }
-// { type: "prioritize_ingredient", ingredient: "beef", pointsAwarded: 20 }
+// { type: "no_spicy_with_guests", points: -30 } // Deduct 30 points when violated
+// { type: "prioritize_ingredient", ingredient: "beef", points: 20 } // Award 20 points when satisfied
 ```
 
 ### User Settings
@@ -307,15 +306,16 @@ not just protein (e.g., zucchini, tomatoes, etc.)
 Each potential dish for each day gets scored (0-100):
 
 - Start at 100
-- Apply deductions for rule violations (using rule's `pointsDeducted` value):
-  - Hard constraint broken: deduct configured points (e.g., -50 for fish before office)
-  - Same protein as yesterday: deduct configured points (default: -20)
-  - Same dish within cooldown: deduct configured points (default: -100, effectively excludes)
-  - Spicy with guests: deduct configured points (default: -30)
-  - Hard meal on busy day: deduct configured points (default: -15)
-- Apply bonuses (using rule's `pointsAwarded` value):
-  - Priority ingredient: award configured points (default: +20)
-  - Haven't had this in a while: award configured points (default: +10)
+- Apply rule's `points` value (negative points = deduction, positive points = bonus):
+  - **Violation rules** (negative points):
+    - Hard constraint broken: e.g., -50 for fish before office
+    - Same protein as yesterday: default -20
+    - Same dish within cooldown: default -100 (effectively excludes)
+    - Spicy with guests: default -30
+    - Hard meal on busy day: default -15
+  - **Satisfaction rules** (positive points):
+    - Priority ingredient: default +20
+    - Haven't had this in a while: default +10
 
 **Note**: All point values are customizable per rule, not hard-coded.
 
@@ -383,9 +383,8 @@ CREATE TABLE rules_config (
     'prioritize_ingredient',
     'dish_cooldown_period'
   )),
-  parameters JSONB NOT NULL, -- Rule-specific parameters (e.g., maxSpicyLevel, ingredient, cooldownDays)
-  points_deducted INTEGER, -- Customizable points deducted when rule is violated
-  points_awarded INTEGER, -- Customizable points awarded when rule is satisfied
+  parameters JSONB NOT NULL, -- Rule-specific parameters (e.g., ingredient, cooldownDays, maxConsecutiveDays)
+  points INTEGER, -- Points impact: negative = deducted when violated, positive = awarded when satisfied
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
