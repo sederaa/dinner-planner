@@ -20,7 +20,7 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
   id: string;
   name: string;
   type: ("main" | "side" | "dessert")[]; // A dish can be multiple types
-  protein: string; // "fish", "chicken", "beef", "pork", "vegetarian", "vegan", etc.
+  proteins?: string[]; // ["fish", "chicken"], ["beef"], undefined for vegetarian/vegan dishes
   isSpicy: boolean; // Whether the dish is spicy
   time: "low" | "medium" | "high"; // Combined prep time and difficulty
   keyIngredients: string[]; // Array of main ingredients
@@ -89,7 +89,8 @@ type Rule = {
 
 - Add/edit/delete dishes (mains, sides, desserts)
 - View all dishes in a searchable/filterable list
-- Quick filters by type (main/side/dessert), protein type, time, spicy (yes/no)
+- Quick filters by type (main/side/dessert), proteins, time, spicy (yes/no)
+- Dishes can have multiple proteins (e.g., surf & turf), or none (vegetarian/vegan)
 - Set dish status: enabled (auto-suggest), manual_only (only manual selection), or disabled (hidden)
 - **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
   - Never auto-suggested (manual-only)
@@ -116,6 +117,7 @@ type Rule = {
 - Toggle rules on/off
 - Adjust rule parameters (e.g., max consecutive days for same protein, cooldown days)
 - Customize points (negative/positive) for each rule (not hard-coded)
+- **Default setup**: App comes pre-populated with 6 core rules and suggested default point values
 
 **Core Rules to Implement:**
 
@@ -155,14 +157,28 @@ type Rule = {
   - Side: Salad
 
   Tuesday 12 February
+  - Leftovers
+
+  Wednesday 13 February
   - Pumpkin Soup
   - Side: Cheese Toastie
+
+  Thursday 14 February
+  - Eating Out
+
+  Friday 15 February
+  - Day Blocked: Anniversary dinner at home
   ```
 
 ### 7. Shopping List (Future Enhancement)
 
 - Generate shopping list from planned meals
 - Group by ingredient category
+
+### 8. Calendar Integration (Future Enhancement)
+
+- Read personal calendars to automatically determine office days
+- Auto-populate office attendance based on calendar events
 
 ## Technology Stack
 
@@ -225,7 +241,7 @@ Legend: 🏢 = Office next day, 👥 = Guests, 🔒 = Locked, ☐ = Select
 │  Dishes                         [+ Add Dish]     │
 ├──────────────────────────────────────────────────┤
 │  [Search...] 🔍                                  │
-│  Filter: [Type ▾] [Protein ▾] [Time ▾]          │
+│  Filter: [Type ▾] [Proteins ▾] [Time ▾]         │
 ├──────────────────────────────────────────────────┤
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🍗 Chicken Stir Fry            [Edit] ✓   │ │
@@ -276,7 +292,9 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Click '+' on a day
    - Modal/drawer opens with dish list (filterable by type)
    - Drag or click to add: Main dish → Side dishes → Dessert
+   - Dragging dishes onto a day always adds to existing dishes (never replaces)
    - Set: Has guests? [Y/N], Office tomorrow? (Person A/B checkboxes)
+     - Office days pre-populated from defaultOfficeDays settings, but can be overridden per day
    - Meal appears on calendar, shows any rule violations
    - Can lock/unlock the day using lock icon
 
@@ -300,6 +318,7 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Drag "Leftovers" or "Eating Out" special dishes onto days
    - Use "Block Day" feature to keep specific days clear (with optional notes)
    - Filter by type (main/side/dessert), protein, time, spicy (yes/no)
+   - Filters and search terms persist for the session (reset on app reload)
 
 5. **Viewing history:**
    - Go to History view
@@ -350,7 +369,7 @@ CREATE TABLE dishes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   type TEXT[] NOT NULL, -- Array: ['main'], ['side'], ['main', 'side'], etc.
-  protein VARCHAR(100) NOT NULL,
+  proteins TEXT[], -- Array of proteins: ['fish'], ['chicken', 'shrimp'], NULL/empty for vegetarian/vegan
   is_spicy BOOLEAN DEFAULT FALSE,
   time VARCHAR(20) CHECK (time IN ('low', 'medium', 'high')), -- Combined prep time + difficulty
   key_ingredients TEXT[], -- PostgreSQL array
@@ -411,7 +430,7 @@ CREATE TABLE user_settings (
 
 ```sql
 CREATE INDEX idx_meal_plans_date ON meal_plans(date);
-CREATE INDEX idx_dishes_protein ON dishes(protein);
+CREATE INDEX idx_dishes_proteins ON dishes USING GIN(proteins); -- GIN index for array
 CREATE INDEX idx_dishes_status ON dishes(status);
 CREATE INDEX idx_dishes_type ON dishes USING GIN(type); -- GIN index for array
 ```
