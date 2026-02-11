@@ -8,7 +8,7 @@
 ## Phase 1: Foundation (Day 1)
 
 - [x] Set up React + TypeScript + Vite + TailwindCSS
-- [ ] Install and configure shadcn/ui
+- [x] Install and configure shadcn/ui
 - [ ] Set up Supabase project and create all tables
 - [ ] Define TypeScript types/interfaces
 - [ ] Basic routing and layout structure
