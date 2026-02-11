@@ -9,10 +9,10 @@
 
 - [x] Set up React + TypeScript + Vite + TailwindCSS
 - [x] Install and configure shadcn/ui
+- [x] Define TypeScript types/interfaces
+- [x] Connect to Supabase client (configured, needs .env)
 - [ ] Set up Supabase project and create all tables
-- [ ] Define TypeScript types/interfaces
 - [ ] Basic routing and layout structure
-- [ ] Connect to Supabase client
 
 ## Phase 2: Dish Management (Day 2)
 
