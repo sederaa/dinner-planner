@@ -21,7 +21,7 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
   name: string;
   type: ("main" | "side" | "dessert")[]; // A dish can be multiple types
   protein: string; // "fish", "chicken", "beef", "pork", "vegetarian", "vegan", etc.
-  spiciness: number; // 0-5 scale (0 = not spicy, 5 = very spicy)
+  isSpicy: boolean; // Whether the dish is spicy
   time: "low" | "medium" | "high"; // Combined prep time and difficulty
   keyIngredients: string[]; // Array of main ingredients
   status: "enabled" | "manual_only" | "disabled"; // enabled: can be auto-suggested, manual_only: only manual selection, disabled: hidden
@@ -36,8 +36,8 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 {
   id: string;
   date: Date;
-  mainDishId: string | "LEFTOVERS" | null; // Special value "LEFTOVERS" for leftover dinners, null if blocked
-  sideDishIds: string[]; // Array of side dish IDs
+  mainDishId: string | "LEFTOVERS" | "EATING_OUT" | null; // Special values for leftover dinners or eating out, null if blocked
+  sideDishIds: string[]; // Array of side dish IDs (no maximum)
   dessertDishId?: string; // Optional dessert
   hasGuests: boolean;
   personAGoesToOffice: boolean; // Next day
@@ -55,7 +55,6 @@ type Rule = {
   id: string;
   name: string;
   enabled: boolean;
-  severity: "constraint" | "preference"; // How strict is this rule
   points?: number; // Points impact: negative = deducted when violated, positive = awarded when satisfied
 } & (
   | { type: "no_fish_before_office_days" }
@@ -90,8 +89,11 @@ type Rule = {
 
 - Add/edit/delete dishes (mains, sides, desserts)
 - View all dishes in a searchable/filterable list
-- Quick filters by type (main/side/dessert), protein type, time, spice level
+- Quick filters by type (main/side/dessert), protein type, time, spicy (yes/no)
 - Set dish status: enabled (auto-suggest), manual_only (only manual selection), or disabled (hidden)
+- **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
+  - Never auto-suggested (manual-only)
+  - Not considered in office day rules or protein variety rules
 - Manually entered only (no imports at this stage)
 
 ### 2. Weekly/Bi-weekly Planner View
@@ -106,21 +108,20 @@ type Rule = {
 - Mark next-day office attendance for both people
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
-- **Special dishes**: "Leftovers" can be dragged onto days for leftover dinners (no fresh cooking)
-- **Block day**: Ability to block a day to keep it intentionally clear
+- **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
+- **Block day**: Ability to block a day to keep it intentionally clear (with optional notes)
 
 ### 3. Rules Engine
 
 - Toggle rules on/off
 - Adjust rule parameters (e.g., max consecutive days for same protein, cooldown days)
-- Customize points deducted/awarded for each rule (not hard-coded)
-- Severity system (hard constraints vs. soft preferences)
+- Customize points (negative/positive) for each rule (not hard-coded)
 
 **Core Rules to Implement:**
 
 1. **No fish before office days** (`no_fish_before_office_days`): If leftovers will be taken to office, exclude fish dishes
 2. **Protein variety** (`no_consecutive_same_protein`): Avoid same protein 2+ days in a row (configurable max consecutive days)
-3. **Guest-friendly** (`no_spicy_with_guests`): Exclude spicy dishes when guests are present (any spiciness > 0)
+3. **Guest-friendly** (`no_spicy_with_guests`): Exclude spicy dishes when guests are present (isSpicy = true)
 4. **Ingredient prioritization** (`prioritize_ingredient`): Prioritize dishes with specific ingredients (e.g., "beef on special" or "need to finish zucchini")
 5. **Easy meals on busy days** (`prefer_easy_on_dual_office_days`): When both go to office next day, prefer low-time meals
 6. **Cooldown period** (`dish_cooldown_period`): Don't repeat the same dish within X days (configurable)
@@ -130,6 +131,8 @@ type Rule = {
 - Generate meal plan based on active rules
 - Option to suggest for all days or selected days only
 - Respect locked days (never overwrite)
+- Special dishes (Leftovers, Eating Out) are never auto-suggested
+- If no suitable dishes found for a day, suggest the "least bad" option with warnings
 - Show compliance score for manual plans
 - Highlight rule violations with explanations
 - "Swap" functionality to suggest alternatives for individual days
@@ -226,19 +229,23 @@ Legend: 🏢 = Office next day, 👥 = Guests, 🔒 = Locked, ☐ = Select
 ├──────────────────────────────────────────────────┤
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🍗 Chicken Stir Fry            [Edit] ✓   │ │
-│  │ Main | Chicken | Spice:2 | Time:Low       │ │
+│  │ Main | Chicken | Spicy | Time:Low          │ │
 │  └────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🥗 Green Salad                 [Edit] ⚙    │ │
-│  │ Side | Veg | Spice:0 | Time:Low            │ │
+│  │ Side | Veg | Not Spicy | Time:Low          │ │
 │  └────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🐟 Grilled Salmon              [Edit] ✗    │ │
-│  │ Main | Fish | Spice:0 | Time:Medium        │ │
+│  │ Main | Fish | Not Spicy | Time:Medium      │ │
 │  └────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────┐ │
 │  │ 🍽️ Leftovers                   [Special]   │ │
 │  │ Special dish for leftover dinners          │ │
+│  └────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────┐ │
+│  │ 🍴 Eating Out                  [Special]   │ │
+│  │ Special dish for eating out                │ │
 │  └────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────┘
 
@@ -290,9 +297,9 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Go to Dishes view
    - Add/edit/delete dishes via form
    - Set status: "enabled" (auto-suggest), "manual_only" (manual selection only), or "disabled" (hidden)
-   - Drag "Leftovers" special dish onto days for leftover dinners
-   - Use "Block Day" feature to keep specific days clear
-   - Filter by type (main/side/dessert), protein, time, etc.
+   - Drag "Leftovers" or "Eating Out" special dishes onto days
+   - Use "Block Day" feature to keep specific days clear (with optional notes)
+   - Filter by type (main/side/dessert), protein, time, spicy (yes/no)
 
 5. **Viewing history:**
    - Go to History view
@@ -319,7 +326,11 @@ Each potential dish for each day gets scored (0-100):
 
 **Note**: All point values are customizable per rule, not hard-coded.
 
-Select highest-scoring dish that's above threshold (e.g., 50 points).
+**Special dish handling**: Days with "Leftovers" or "Eating Out" are not evaluated for office day rules or protein variety rules.
+
+**Cooldown period with no history**: The cooldown rule is ignored for dishes with no historical data until sufficient history exists.
+
+Select highest-scoring dish that's above threshold (e.g., 50 points). If no dish meets threshold, select the least bad option and show warnings.
 
 ### Validation on Manual Selection
 
@@ -340,7 +351,7 @@ CREATE TABLE dishes (
   name VARCHAR(255) NOT NULL,
   type TEXT[] NOT NULL, -- Array: ['main'], ['side'], ['main', 'side'], etc.
   protein VARCHAR(100) NOT NULL,
-  spiciness INTEGER CHECK (spiciness >= 0 AND spiciness <= 5),
+  is_spicy BOOLEAN DEFAULT FALSE,
   time VARCHAR(20) CHECK (time IN ('low', 'medium', 'high')), -- Combined prep time + difficulty
   key_ingredients TEXT[], -- PostgreSQL array
   status VARCHAR(20) CHECK (status IN ('enabled', 'manual_only', 'disabled')) DEFAULT 'enabled',
@@ -355,8 +366,8 @@ CREATE TABLE meal_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   date DATE NOT NULL,
   main_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL, -- NULL if blocked day
-  main_dish_type VARCHAR(20) CHECK (main_dish_type IN ('dish', 'leftovers')), -- 'leftovers' for special leftover entry
-  side_dish_ids UUID[], -- Array of side dish IDs
+  main_dish_type VARCHAR(20) CHECK (main_dish_type IN ('dish', 'leftovers', 'eating_out')), -- Special types for leftover or eating out
+  side_dish_ids UUID[], -- Array of side dish IDs (no maximum)
   dessert_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL,
   has_guests BOOLEAN DEFAULT FALSE,
   person_a_office_next_day BOOLEAN DEFAULT FALSE,
@@ -374,7 +385,6 @@ CREATE TABLE rules_config (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   enabled BOOLEAN DEFAULT TRUE,
-  severity VARCHAR(20) CHECK (severity IN ('constraint', 'preference')),
   rule_type VARCHAR(100) CHECK (rule_type IN (
     'no_fish_before_office_days',
     'no_consecutive_same_protein',
