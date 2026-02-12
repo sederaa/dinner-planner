@@ -11,7 +11,7 @@
 - [x] Install and configure shadcn/ui
 - [x] Define TypeScript types/interfaces
 - [x] Connect to Supabase client (configured, needs .env)
-- [ ] Set up Supabase project and create all tables
+- [x] Set up Supabase project and create all tables
 - [ ] Basic routing and layout structure
 
 ## Phase 2: Dish Management (Day 2)
@@ -69,8 +69,8 @@
 ## Current Status
 
 **Phase:** 1 - Foundation  
-**Last Updated:** 12 February 2026  
-**Next Task:** Install shadcn/ui and set up Supabase
+**Last Updated:** 13 February 2026  
+**Next Task:** Basic routing and layout structure
 
 ---
 
