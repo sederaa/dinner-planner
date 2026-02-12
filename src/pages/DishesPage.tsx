@@ -1,4 +1,38 @@
+import { useState } from "react";
+import { useDishes } from "../hooks/useDishes";
+import { DishList } from "../components/DishList";
+import { DishFormDialog } from "../components/DishFormDialog";
+import type { Dish, DishFormData } from "../types/dish";
+
 export function DishesPage() {
+  const { dishes, loading, error, addDish, updateDish, deleteDish } = useDishes();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState<Dish | null>(null);
+
+  const handleAddClick = () => {
+    setEditingDish(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditClick = (dish: Dish) => {
+    setEditingDish(dish);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteClick = async (dish: Dish) => {
+    if (window.confirm(`Are you sure you want to delete "${dish.name}"?`)) {
+      await deleteDish(dish.id);
+    }
+  };
+
+  const handleSubmit = async (data: DishFormData) => {
+    if (editingDish) {
+      await updateDish(editingDish.id, data);
+    } else {
+      await addDish(data);
+    }
+  };
+
   return (
     <div>
       <div className="mb-8 flex items-start justify-between">
@@ -6,18 +40,26 @@ export function DishesPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">🍽️ Dishes</h2>
           <p className="text-gray-600">Manage your dish database</p>
         </div>
-        <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all font-medium shadow-md">
+        <button onClick={handleAddClick} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
           + Add Dish
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-6xl mb-4">🥘</div>
-          <p className="text-lg text-gray-500 mb-2">Dish list and filters coming soon</p>
-          <p className="text-sm text-gray-400">Create, edit, and manage your favorite dishes</p>
+      {loading && (
+        <div className="text-center py-12">
+          <p className="text-gray-600">Loading dishes...</p>
         </div>
-      </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && <DishList dishes={dishes} onEdit={handleEditClick} onDelete={handleDeleteClick} />}
+
+      <DishFormDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleSubmit} dish={editingDish} />
     </div>
   );
 }

@@ -39,11 +39,7 @@ export function Layout() {
                 to={item.path}
                 className={`
                   flex items-center gap-2 px-6 py-4 text-[14px] font-normal transition-colors relative border-b-2
-                  ${
-                    isActive(item.path)
-                      ? "text-gray-900 font-semibold border-blue-600"
-                      : "text-gray-600 hover:text-gray-900 border-transparent"
-                  }
+                  ${isActive(item.path) ? "text-gray-900 font-semibold border-blue-600" : "text-gray-600 hover:text-gray-900 border-transparent"}
                 `}
               >
                 <span className="text-base">{item.icon}</span>

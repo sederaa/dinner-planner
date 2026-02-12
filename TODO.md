@@ -16,7 +16,7 @@
 
 ## Phase 2: Dish Management (Day 2)
 
-- [ ] Dish CRUD operations (UI + API)
+- [x] Dish CRUD operations (UI + API)
 - [ ] Dish list view with filters (type, proteins, time, spicy)
 - [ ] Add/edit dish form with all fields
 - [ ] Status toggle (enabled/manual_only/disabled)

@@ -1,5 +1,6 @@
 // Core data models for the Dinner Planner app
 
+export * from "./database";
 export type DishStatus = "enabled" | "manual_only" | "disabled";
 
 export type DishType = "main" | "side" | "dessert";
