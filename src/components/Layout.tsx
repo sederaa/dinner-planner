@@ -18,33 +18,35 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🍽️</span>
-              <h1 className="text-xl font-bold text-gray-900">Dinner Planner</h1>
-            </div>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16 gap-3">
+            <span className="text-2xl">🍽️</span>
+            <h1 className="text-xl font-semibold text-gray-900">Dinner Planner</h1>
           </div>
         </div>
       </header>
 
-      {/* Navigation */}
+      {/* Navigation Tabs */}
       <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-4">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`
-                  flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors
-                  ${isActive(item.path) ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}
+                  flex items-center gap-2 px-6 py-4 text-[14px] font-normal transition-colors relative border-b-2
+                  ${
+                    isActive(item.path)
+                      ? "text-gray-900 font-semibold border-blue-600"
+                      : "text-gray-600 hover:text-gray-900 border-transparent"
+                  }
                 `}
               >
-                <span>{item.icon}</span>
+                <span className="text-base">{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             ))}
@@ -53,7 +55,7 @@ export function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
     </div>
