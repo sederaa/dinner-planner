@@ -1,11 +1,23 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { PlannerPage } from "./pages/PlannerPage";
+import { DishesPage } from "./pages/DishesPage";
+import { RulesPage } from "./pages/RulesPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import "./App.css";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-4xl font-bold text-gray-900 mb-2">🍽️ Dinner Planner</h1>
-      <p className="text-gray-600">Plan your weekly dinners with smart suggestions</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<PlannerPage />} />
+          <Route path="dishes" element={<DishesPage />} />
+          <Route path="rules" element={<RulesPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
