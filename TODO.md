@@ -17,7 +17,7 @@
 ## Phase 2: Dish Management (Day 2)
 
 - [x] Dish CRUD operations (UI + API)
-- [ ] Dish list view with filters (type, proteins, time, spicy)
+- [x] Dish list view with filters (type, proteins, time, spicy)
 - [ ] Add/edit dish form with all fields
 - [ ] Status toggle (enabled/manual_only/disabled)
 - [ ] Special dishes (Leftovers, Eating Out) UI elements
@@ -69,8 +69,8 @@
 ## Current Status
 
 **Phase:** 2 - Dish Management  
-**Last Updated:** 13 February 2026  
-**Next Task:** Dish CRUD operations (UI + API)
+**Last Updated:** 16 February 2026  
+**Next Task:** Add/edit dish form with all fields
 
 ---
 
