@@ -24,7 +24,7 @@
 
 ## Phase 3: Calendar & Manual Planning (Days 3-4)
 
-- [ ] Weekly calendar view (14 days, starting Monday)
+- [x] Weekly calendar view (14 days, starting Monday)
 - [ ] Manual meal assignment (drag-and-drop or click to add)
 - [ ] Support for main + multiple sides + dessert per day
 - [ ] Lock/unlock days
@@ -68,9 +68,9 @@
 
 ## Current Status
 
-**Phase:** 2 - Dish Management  
+**Phase:** 3 - Calendar & Manual Planning  
 **Last Updated:** 16 February 2026  
-**Next Task:** Weekly calendar view (14 days, starting Monday)
+**Next Task:** Manual meal assignment (drag-and-drop or click to add)
 
 ---
 
