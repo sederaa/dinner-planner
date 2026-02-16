@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Checkbox } from "./ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { Dish, DishFormData, DishType, DishTime, DishStatus } from "../types/dish";
+import type { Dish, DishFormData, CourseType, DishTime, DishStatus } from "../types/dish";
 
 interface DishFormDialogProps {
   open: boolean;
@@ -15,19 +15,20 @@ interface DishFormDialogProps {
   dish?: Dish | null;
 }
 
-const DISH_TYPES: DishType[] = ["main", "side", "dessert"];
+const COURSE_TYPES: CourseType[] = ["main", "side", "dessert"];
 const DISH_TIMES: DishTime[] = ["low", "medium", "high"];
 const DISH_STATUSES: DishStatus[] = ["enabled", "manual_only", "disabled"];
 
 export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialogProps) {
   const [formData, setFormData] = useState<DishFormData>({
     name: "",
-    type: [],
+    course: [],
     proteins: [],
     isSpicy: false,
     time: "medium",
     keyIngredients: [],
     status: "enabled",
+    type: "cooked",
     notes: "",
     tags: [],
   });
@@ -39,24 +40,26 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
     if (dish) {
       setFormData({
         name: dish.name,
-        type: dish.type,
+        course: dish.course,
         proteins: dish.proteins || [],
         isSpicy: dish.isSpicy,
         time: dish.time,
         keyIngredients: dish.keyIngredients,
         status: dish.status,
+        type: dish.type || "cooked",
         notes: dish.notes || "",
         tags: dish.tags || [],
       });
     } else {
       setFormData({
         name: "",
-        type: [],
+        course: [],
         proteins: [],
         isSpicy: false,
         time: "medium",
         keyIngredients: [],
         status: "enabled",
+        type: "cooked",
         notes: "",
         tags: [],
       });
@@ -78,10 +81,10 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
     }
   };
 
-  const toggleType = (type: DishType) => {
+  const toggleCourse = (course: CourseType) => {
     setFormData((prev) => ({
       ...prev,
-      type: prev.type.includes(type) ? prev.type.filter((t) => t !== type) : [...prev.type, type],
+      course: prev.course.includes(course) ? prev.course.filter((c) => c !== course) : [...prev.course, course],
     }));
   };
 
@@ -138,15 +141,15 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
             />
           </div>
 
-          {/* Type */}
+          {/* Course */}
           <div className="space-y-2">
-            <Label>Type * (select at least one)</Label>
+            <Label>Course * (select at least one)</Label>
             <div className="flex gap-4">
-              {DISH_TYPES.map((type) => (
-                <div key={type} className="flex items-center space-x-2">
-                  <Checkbox id={`type-${type}`} checked={formData.type.includes(type)} onCheckedChange={() => toggleType(type)} />
-                  <label htmlFor={`type-${type}`} className="text-sm capitalize cursor-pointer">
-                    {type}
+              {COURSE_TYPES.map((course) => (
+                <div key={course} className="flex items-center space-x-2">
+                  <Checkbox id={`course-${course}`} checked={formData.course.includes(course)} onCheckedChange={() => toggleCourse(course)} />
+                  <label htmlFor={`course-${course}`} className="text-sm capitalize cursor-pointer">
+                    {course}
                   </label>
                 </div>
               ))}
@@ -268,7 +271,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
             <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting || formData.type.length === 0 || formData.keyIngredients.length === 0}>
+            <Button type="submit" disabled={submitting || formData.course.length === 0 || formData.keyIngredients.length === 0}>
               {submitting ? "Saving..." : dish ? "Update Dish" : "Add Dish"}
             </Button>
           </div>

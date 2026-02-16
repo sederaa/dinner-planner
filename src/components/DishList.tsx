@@ -74,9 +74,9 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-1">
-                    {dish.type.map((t) => (
-                      <span key={t} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                        {t}
+                    {dish.course.map((course) => (
+                      <span key={course} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        {course}
                       </span>
                     ))}
                   </div>

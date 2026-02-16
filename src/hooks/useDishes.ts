@@ -25,7 +25,7 @@ export function useDishes() {
       const dishes: Dish[] = ((data as DishRow[]) || []).map((row) => ({
         id: row.id,
         name: row.name,
-        type: row.type as any,
+        course: row.type as any,
         proteins: row.proteins || undefined,
         isSpicy: row.is_spicy,
         time: row.time as any,
@@ -50,7 +50,7 @@ export function useDishes() {
     try {
       const insertData: DishInsert = {
         name: dishData.name,
-        type: dishData.type,
+        type: dishData.course,
         proteins: dishData.proteins.length > 0 ? dishData.proteins : null,
         is_spicy: dishData.isSpicy,
         time: dishData.time,
@@ -76,7 +76,7 @@ export function useDishes() {
         ? {
             id: row.id,
             name: row.name,
-            type: row.type as any,
+            course: row.type as any,
             proteins: row.proteins || undefined,
             isSpicy: row.is_spicy,
             time: row.time as any,
@@ -99,7 +99,7 @@ export function useDishes() {
     try {
       const updateData: DishUpdate = {};
       if (dishData.name !== undefined) updateData.name = dishData.name;
-      if (dishData.type !== undefined) updateData.type = dishData.type;
+      if (dishData.course !== undefined) updateData.type = dishData.course;
       if (dishData.proteins !== undefined) updateData.proteins = dishData.proteins.length > 0 ? dishData.proteins : null;
       if (dishData.isSpicy !== undefined) updateData.is_spicy = dishData.isSpicy;
       if (dishData.time !== undefined) updateData.time = dishData.time;

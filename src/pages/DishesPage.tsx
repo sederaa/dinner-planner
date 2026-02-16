@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useDishes } from "../hooks/useDishes";
 import { DishList } from "../components/DishList";
 import { DishFormDialog } from "../components/DishFormDialog";
-import type { Dish, DishFormData, DishType } from "../types/dish";
+import type { Dish, DishFormData, CourseType } from "../types/dish";
 
 export function DishesPage() {
   const { dishes, loading, error, addDish, updateDish, deleteDish } = useDishes();
@@ -34,7 +34,7 @@ export function DishesPage() {
   };
 
   // Filters state
-  const [selectedTypes, setSelectedTypes] = useState<DishType[]>([]);
+  const [selectedCourses, setSelectedCourses] = useState<CourseType[]>([]);
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
@@ -46,8 +46,8 @@ export function DishesPage() {
     return Array.from(set).sort();
   }, [dishes]);
 
-  const toggleType = (t: DishType) => {
-    setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  const toggleCourse = (course: CourseType) => {
+    setSelectedCourses((prev) => (prev.includes(course) ? prev.filter((value) => value !== course) : [...prev, course]));
   };
 
   const toggleProtein = (p: string) => {
@@ -55,7 +55,7 @@ export function DishesPage() {
   };
 
   const clearFilters = () => {
-    setSelectedTypes([]);
+    setSelectedCourses([]);
     setSelectedProteins([]);
     setSelectedTime("all");
     setSelectedStatus("");
@@ -64,7 +64,7 @@ export function DishesPage() {
 
   const filteredDishes = useMemo(() => {
     return dishes.filter((d) => {
-      if (selectedTypes.length > 0 && !d.type.some((t) => selectedTypes.includes(t))) return false;
+      if (selectedCourses.length > 0 && !d.course.some((course) => selectedCourses.includes(course))) return false;
       if (selectedProteins.length > 0) {
         const hasAny = d.proteins && d.proteins.some((p) => selectedProteins.includes(p));
         if (!hasAny) return false;
@@ -74,7 +74,7 @@ export function DishesPage() {
       if (spicyOnly && !d.isSpicy) return false;
       return true;
     });
-  }, [dishes, selectedTypes, selectedProteins, selectedTime, selectedStatus, spicyOnly]);
+  }, [dishes, selectedCourses, selectedProteins, selectedTime, selectedStatus, spicyOnly]);
 
   return (
     <div>
@@ -104,17 +104,17 @@ export function DishesPage() {
         <div>
           <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-wrap gap-2 items-center">
-              <div className="text-sm font-medium text-gray-700 mr-2">Type:</div>
+              <div className="text-sm font-medium text-gray-700 mr-2">Course:</div>
               <label className="inline-flex items-center text-sm">
-                <input type="checkbox" checked={selectedTypes.includes("main")} onChange={() => toggleType("main")} className="mr-1" />
+                <input type="checkbox" checked={selectedCourses.includes("main")} onChange={() => toggleCourse("main")} className="mr-1" />
                 Main
               </label>
               <label className="inline-flex items-center text-sm ml-2">
-                <input type="checkbox" checked={selectedTypes.includes("side")} onChange={() => toggleType("side")} className="mr-1" />
+                <input type="checkbox" checked={selectedCourses.includes("side")} onChange={() => toggleCourse("side")} className="mr-1" />
                 Side
               </label>
               <label className="inline-flex items-center text-sm ml-2">
-                <input type="checkbox" checked={selectedTypes.includes("dessert")} onChange={() => toggleType("dessert")} className="mr-1" />
+                <input type="checkbox" checked={selectedCourses.includes("dessert")} onChange={() => toggleCourse("dessert")} className="mr-1" />
                 Dessert
               </label>
             </div>
@@ -146,7 +146,7 @@ export function DishesPage() {
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Status:</div>
                 <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className="border rounded px-2 py-1 text-sm">
-                  <option value=""></option>
+                  <option value="">All</option>
                   <option value="enabled">Enabled</option>
                   <option value="manual_only">Manual only</option>
                   <option value="disabled">Disabled</option>

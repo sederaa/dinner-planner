@@ -20,7 +20,7 @@
 - [x] Dish list view with filters (type, proteins, time, spicy)
 - [x] Add/edit dish form with all fields
 - [x] Status toggle (enabled/manual_only/disabled)
-- [ ] Special dishes (Leftovers, Eating Out) UI elements
+- [x] Special dishes (Leftovers, Eating Out) UI elements
 
 ## Phase 3: Calendar & Manual Planning (Days 3-4)
 
@@ -70,7 +70,7 @@
 
 **Phase:** 2 - Dish Management  
 **Last Updated:** 16 February 2026  
-**Next Task:** Special dishes (Leftovers, Eating Out) UI elements
+**Next Task:** Weekly calendar view (14 days, starting Monday)
 
 ---
 
