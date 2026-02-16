@@ -175,9 +175,9 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
               {formData.proteins.map((protein) => (
                 <span key={protein} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
                   {protein}
-                  <button type="button" onClick={() => removeProtein(protein)} className="hover:text-blue-900">
+                  <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent hover:text-blue-900" onClick={() => removeProtein(protein)}>
                     ×
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -202,9 +202,15 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
               {formData.keyIngredients.map((ingredient) => (
                 <span key={ingredient} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                   {ingredient}
-                  <button type="button" onClick={() => removeIngredient(ingredient)} className="hover:text-green-900">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 p-0 hover:bg-transparent hover:text-green-900"
+                    onClick={() => removeIngredient(ingredient)}
+                  >
                     ×
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>

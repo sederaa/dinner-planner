@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 import { useDishes } from "../hooks/useDishes";
 import { DishList } from "../components/DishList";
 import { DishFormDialog } from "../components/DishFormDialog";
-import type { Dish, DishFormData, CourseType } from "../types/dish";
+import { Button } from "../components/ui/button";
+import { Checkbox } from "../components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import type { Dish, DishFormData, CourseType, DishStatus, DishTime } from "../types/dish";
 
 export function DishesPage() {
   const { dishes, loading, error, addDish, updateDish, deleteDish } = useDishes();
@@ -36,8 +39,8 @@ export function DishesPage() {
   // Filters state
   const [selectedCourses, setSelectedCourses] = useState<CourseType[]>([]);
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
-  const [selectedTime, setSelectedTime] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<DishTime | "all">("all");
+  const [selectedStatus, setSelectedStatus] = useState<DishStatus | "all">("all");
   const [spicyOnly, setSpicyOnly] = useState(false);
 
   const allProteins = useMemo(() => {
@@ -58,7 +61,7 @@ export function DishesPage() {
     setSelectedCourses([]);
     setSelectedProteins([]);
     setSelectedTime("all");
-    setSelectedStatus("");
+    setSelectedStatus("all");
     setSpicyOnly(false);
   };
 
@@ -69,8 +72,8 @@ export function DishesPage() {
         const hasAny = d.proteins && d.proteins.some((p) => selectedProteins.includes(p));
         if (!hasAny) return false;
       }
-      if (selectedTime !== "all" && (d.time as string) !== selectedTime) return false;
-      if (selectedStatus !== "" && d.status !== selectedStatus) return false;
+      if (selectedTime !== "all" && d.time !== selectedTime) return false;
+      if (selectedStatus !== "all" && d.status !== selectedStatus) return false;
       if (spicyOnly && !d.isSpicy) return false;
       return true;
     });
@@ -83,9 +86,9 @@ export function DishesPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">🍽️ Dishes</h2>
           <p className="text-gray-600">Manage your dish database</p>
         </div>
-        <button onClick={handleAddClick} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+        <Button onClick={handleAddClick} size="lg">
           + Add Dish
-        </button>
+        </Button>
       </div>
 
       {loading && (
@@ -105,16 +108,16 @@ export function DishesPage() {
           <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-wrap gap-2 items-center">
               <div className="text-sm font-medium text-gray-700 mr-2">Course:</div>
-              <label className="inline-flex items-center text-sm">
-                <input type="checkbox" checked={selectedCourses.includes("main")} onChange={() => toggleCourse("main")} className="mr-1" />
+              <label className="inline-flex items-center text-sm gap-2">
+                <Checkbox checked={selectedCourses.includes("main")} onCheckedChange={() => toggleCourse("main")} />
                 Main
               </label>
-              <label className="inline-flex items-center text-sm ml-2">
-                <input type="checkbox" checked={selectedCourses.includes("side")} onChange={() => toggleCourse("side")} className="mr-1" />
+              <label className="inline-flex items-center text-sm ml-2 gap-2">
+                <Checkbox checked={selectedCourses.includes("side")} onCheckedChange={() => toggleCourse("side")} />
                 Side
               </label>
-              <label className="inline-flex items-center text-sm ml-2">
-                <input type="checkbox" checked={selectedCourses.includes("dessert")} onChange={() => toggleCourse("dessert")} className="mr-1" />
+              <label className="inline-flex items-center text-sm ml-2 gap-2">
+                <Checkbox checked={selectedCourses.includes("dessert")} onCheckedChange={() => toggleCourse("dessert")} />
                 Dessert
               </label>
             </div>
@@ -125,8 +128,8 @@ export function DishesPage() {
                 <div className="flex gap-2 flex-wrap">
                   {allProteins.length === 0 && <div className="text-sm text-gray-500">—</div>}
                   {allProteins.map((p) => (
-                    <label key={p} className="inline-flex items-center text-sm">
-                      <input type="checkbox" checked={selectedProteins.includes(p)} onChange={() => toggleProtein(p)} className="mr-1" />
+                    <label key={p} className="inline-flex items-center text-sm gap-2">
+                      <Checkbox checked={selectedProteins.includes(p)} onCheckedChange={() => toggleProtein(p)} />
                       {p}
                     </label>
                   ))}
@@ -135,30 +138,42 @@ export function DishesPage() {
 
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Time:</div>
-                <select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="border rounded px-2 py-1 text-sm">
-                  <option value="all">All</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+                <Select value={selectedTime} onValueChange={(value: DishTime | "all") => setSelectedTime(value)}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Status:</div>
-                <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className="border rounded px-2 py-1 text-sm">
-                  <option value="">All</option>
-                  <option value="enabled">Enabled</option>
-                  <option value="manual_only">Manual only</option>
-                  <option value="disabled">Disabled</option>
-                </select>
+                <Select value={selectedStatus} onValueChange={(value: DishStatus | "all") => setSelectedStatus(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="enabled">Enabled</SelectItem>
+                    <SelectItem value="manual_only">Manual only</SelectItem>
+                    <SelectItem value="disabled">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <label className="inline-flex items-center text-sm">
-                <input type="checkbox" checked={spicyOnly} onChange={() => setSpicyOnly((s) => !s)} className="mr-1" />
+              <label className="inline-flex items-center text-sm gap-2">
+                <Checkbox checked={spicyOnly} onCheckedChange={(checked) => setSpicyOnly(checked === true)} />
                 Spicy only
               </label>
 
-              <button onClick={clearFilters} className="ml-2 text-sm text-blue-600 hover:text-blue-800">Clear</button>
+              <Button type="button" variant="link" className="ml-2 h-auto p-0" onClick={clearFilters}>
+                Clear
+              </Button>
             </div>
           </div>
 

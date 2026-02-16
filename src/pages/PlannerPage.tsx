@@ -1,3 +1,5 @@
+import { Card, CardContent } from "../components/ui/card";
+
 export function PlannerPage() {
   return (
     <div>
@@ -6,13 +8,15 @@ export function PlannerPage() {
         <p className="text-gray-600">Plan your dinners for the next 1-2 weeks</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
+      <Card className="border-gray-100 shadow-lg">
+        <CardContent className="p-8">
         <div className="flex flex-col items-center justify-center py-12">
           <div className="text-6xl mb-4">🍳</div>
           <p className="text-lg text-gray-500 mb-2">Weekly calendar view coming soon</p>
           <p className="text-sm text-gray-400">Drag and drop meals to plan your week</p>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

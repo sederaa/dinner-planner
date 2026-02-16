@@ -1,4 +1,6 @@
 import type { Dish, DishStatus } from "../types/dish";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 
 interface DishListProps {
   dishes: Dish[];
@@ -9,13 +11,15 @@ interface DishListProps {
 export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
   if (dishes.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12">
+      <Card className="rounded-lg border-gray-200">
+        <CardContent className="p-12">
         <div className="text-center">
           <div className="text-5xl mb-4">🍽️</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No dishes yet</h3>
           <p className="text-gray-600">Get started by adding your first dish</p>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -48,7 +52,7 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <Card className="rounded-lg border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -91,18 +95,18 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>{getStatusLabel(dish.status)}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => onEdit(dish)} className="text-blue-600 hover:text-blue-900 mr-4">
+                  <Button variant="link" className="mr-4 h-auto p-0 text-blue-600 hover:text-blue-900" onClick={() => onEdit(dish)}>
                     Edit
-                  </button>
-                  <button onClick={() => onDelete(dish)} className="text-red-600 hover:text-red-900">
+                  </Button>
+                  <Button variant="link" className="h-auto p-0 text-red-600 hover:text-red-900" onClick={() => onDelete(dish)}>
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
