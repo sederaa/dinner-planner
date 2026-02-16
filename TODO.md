@@ -25,7 +25,7 @@
 ## Phase 3: Calendar & Manual Planning (Days 3-4)
 
 - [x] Weekly calendar view (14 days, starting Monday)
-- [ ] Manual meal assignment (drag-and-drop or click to add)
+- [x] Manual meal assignment (drag-and-drop or click to add)
 - [ ] Support for main + multiple sides + dessert per day
 - [ ] Lock/unlock days
 - [ ] Mark guests and office days (pre-populated from settings with override)
@@ -70,7 +70,7 @@
 
 **Phase:** 3 - Calendar & Manual Planning  
 **Last Updated:** 16 February 2026  
-**Next Task:** Manual meal assignment (drag-and-drop or click to add)
+**Next Task:** Support for main + multiple sides + dessert per day
 
 ---
 
