@@ -26,7 +26,7 @@
 
 - [x] Weekly calendar view (14 days, starting Monday)
 - [x] Manual meal assignment (drag-and-drop or click to add)
-- [ ] Support for main + multiple sides + dessert per day
+- [x] Support for main + multiple sides + dessert per day
 - [ ] Lock/unlock days
 - [ ] Mark guests and office days (pre-populated from settings with override)
 - [ ] Block day functionality
@@ -70,7 +70,7 @@
 
 **Phase:** 3 - Calendar & Manual Planning  
 **Last Updated:** 16 February 2026  
-**Next Task:** Support for main + multiple sides + dessert per day
+**Next Task:** Lock/unlock days
 
 ---
 
