@@ -18,8 +18,8 @@
 
 - [x] Dish CRUD operations (UI + API)
 - [x] Dish list view with filters (type, proteins, time, spicy)
-- [ ] Add/edit dish form with all fields
-- [ ] Status toggle (enabled/manual_only/disabled)
+- [x] Add/edit dish form with all fields
+- [x] Status toggle (enabled/manual_only/disabled)
 - [ ] Special dishes (Leftovers, Eating Out) UI elements
 
 ## Phase 3: Calendar & Manual Planning (Days 3-4)
@@ -70,7 +70,7 @@
 
 **Phase:** 2 - Dish Management  
 **Last Updated:** 16 February 2026  
-**Next Task:** Add/edit dish form with all fields
+**Next Task:** Special dishes (Leftovers, Eating Out) UI elements
 
 ---
 

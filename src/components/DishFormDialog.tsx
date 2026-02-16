@@ -208,7 +208,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Time & Spicy */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${dish ? "grid-cols-2" : "grid-cols-1"}`}>
             <div className="space-y-2">
               <Label htmlFor="time">Time & Difficulty *</Label>
               <Select value={formData.time} onValueChange={(value: DishTime) => setFormData({ ...formData, time: value })}>
@@ -224,21 +224,23 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select value={formData.status} onValueChange={(value: DishStatus) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DISH_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status.replace("_", " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {dish && (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select value={formData.status} onValueChange={(value: DishStatus) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISH_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Spicy checkbox */}

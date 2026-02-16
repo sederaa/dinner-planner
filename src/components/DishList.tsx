@@ -1,4 +1,4 @@
-import type { Dish } from "../types/dish";
+import type { Dish, DishStatus } from "../types/dish";
 
 interface DishListProps {
   dishes: Dish[];
@@ -35,6 +35,16 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
       high: "bg-red-100 text-red-800",
     };
     return styles[time as keyof typeof styles] || styles.low;
+  };
+
+  const getStatusLabel = (status: DishStatus) => {
+    const labels: Record<DishStatus, string> = {
+      enabled: "Enabled",
+      manual_only: "Manual only",
+      disabled: "Disabled",
+    };
+
+    return labels[status];
   };
 
   return (
@@ -78,7 +88,7 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTimeBadge(dish.time)}`}>{dish.time}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>{dish.status}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>{getStatusLabel(dish.status)}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button onClick={() => onEdit(dish)} className="text-blue-600 hover:text-blue-900 mr-4">

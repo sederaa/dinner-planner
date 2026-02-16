@@ -37,6 +37,7 @@ export function DishesPage() {
   const [selectedTypes, setSelectedTypes] = useState<DishType[]>([]);
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [spicyOnly, setSpicyOnly] = useState(false);
 
   const allProteins = useMemo(() => {
@@ -57,6 +58,7 @@ export function DishesPage() {
     setSelectedTypes([]);
     setSelectedProteins([]);
     setSelectedTime("all");
+    setSelectedStatus("");
     setSpicyOnly(false);
   };
 
@@ -68,10 +70,11 @@ export function DishesPage() {
         if (!hasAny) return false;
       }
       if (selectedTime !== "all" && (d.time as string) !== selectedTime) return false;
+      if (selectedStatus !== "" && d.status !== selectedStatus) return false;
       if (spicyOnly && !d.isSpicy) return false;
       return true;
     });
-  }, [dishes, selectedTypes, selectedProteins, selectedTime, spicyOnly]);
+  }, [dishes, selectedTypes, selectedProteins, selectedTime, selectedStatus, spicyOnly]);
 
   return (
     <div>
@@ -137,6 +140,16 @@ export function DishesPage() {
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-medium text-gray-700">Status:</div>
+                <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                  <option value=""></option>
+                  <option value="enabled">Enabled</option>
+                  <option value="manual_only">Manual only</option>
+                  <option value="disabled">Disabled</option>
                 </select>
               </div>
 
