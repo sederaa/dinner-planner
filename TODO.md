@@ -29,8 +29,7 @@
 - [x] Support for main + multiple sides + dessert per day
 - [x] Lock/unlock days
 - [x] Mark guests and office days (pre-populated from settings with override)
-- [ ] Block day functionality
-- [ ] Export to clipboard functionality
+- [x] Export to clipboard functionality
 
 ## Phase 4: Rules & Auto-Suggest (Days 5-6)
 
@@ -70,7 +69,7 @@
 
 **Phase:** 3 - Calendar & Manual Planning  
 **Last Updated:** 18 February 2026  
-**Next Task:** Block day functionality
+**Next Task:** Rules configuration UI with customizable points
 
 ---
 

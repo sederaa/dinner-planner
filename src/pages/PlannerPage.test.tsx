@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PlannerPage } from "./PlannerPage";
+import type { Database } from "../types/database";
+
+type MealPlanRow = Database["public"]["Tables"]["meal_plans"]["Row"];
 
 const mockData = vi.hoisted(() => {
   const today = new Date();
@@ -40,7 +43,7 @@ const mockData = vi.hoisted(() => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-    ],
+    ] as MealPlanRow[],
   };
 });
 
@@ -125,7 +128,7 @@ describe("PlannerPage", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-    ];
+    ] as MealPlanRow[];
 
     render(<PlannerPage />);
 

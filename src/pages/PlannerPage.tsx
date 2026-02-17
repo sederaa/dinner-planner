@@ -101,6 +101,7 @@ export function PlannerPage() {
   const [openDayMenuDateKey, setOpenDayMenuDateKey] = useState<string | null>(null);
   const openDayMenuContainerRef = useRef<HTMLDivElement | null>(null);
   const [defaultOfficeDays, setDefaultOfficeDays] = useState<DefaultOfficeDays>(FALLBACK_DEFAULT_OFFICE_DAYS);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
@@ -651,6 +652,101 @@ export function PlannerPage() {
     setSpecialMeal(isEnabled ? null : eatingOutOption);
   };
 
+  const formatExportDate = (date: Date) => {
+    return new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "long", day: "numeric", month: "long" }).format(date);
+  };
+
+  const buildExportText = () => {
+    return days
+      .map((date) => {
+        const dateKey = toDateKey(date);
+        const assignedMeal = assignedMealsByDate[dateKey];
+        const metadata = resolvedMetadataForDateKey(dateKey);
+        const isLocked = Boolean(lockedDaysByDate[dateKey]);
+        const dayFlags: string[] = [];
+
+        if (metadata.hasGuests) {
+          dayFlags.push("Guests");
+        }
+
+        const officePeople: string[] = [];
+        if (metadata.personAOfficeNextDay) officePeople.push("A");
+        if (metadata.personBOfficeNextDay) officePeople.push("B");
+        if (officePeople.length > 0) {
+          dayFlags.push(`Office: ${officePeople.join(", ")}`);
+        }
+
+        if (isLocked) {
+          dayFlags.push("Locked");
+        }
+
+        const dateLine = dayFlags.length > 0 ? `${formatExportDate(date)} - ${dayFlags.join(" · ")}` : formatExportDate(date);
+        const lines: string[] = [dateLine];
+
+        if (!assignedMeal) {
+          lines.push("- No meal planned");
+          return lines.join("\n");
+        }
+
+        if (assignedMeal.special) {
+          lines.push(`- ${assignedMeal.special.name}`);
+          return lines.join("\n");
+        }
+
+        if (assignedMeal.main) {
+          lines.push(`- ${assignedMeal.main.name}`);
+        } else {
+          lines.push("- No main dish selected");
+        }
+
+        if (assignedMeal.sides.length > 0) {
+          lines.push(`- Side: ${assignedMeal.sides.map((side) => side.name).join(", ")}`);
+        }
+
+        if (assignedMeal.dessert) {
+          lines.push(`- Dessert: ${assignedMeal.dessert.name}`);
+        }
+
+        return lines.join("\n");
+      })
+      .join("\n\n");
+  };
+
+  const copyTextToClipboard = async (text: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    if (typeof document !== "undefined") {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "absolute";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const exportMealPlan = async () => {
+    const exportText = buildExportText();
+
+    try {
+      await copyTextToClipboard(exportText);
+      setExportMessage("Copied to clipboard");
+    } catch (exportError) {
+      console.error("Error exporting meal plan:", exportError);
+      setExportMessage("Copy failed");
+    }
+
+    setTimeout(() => {
+      setExportMessage(null);
+    }, 2000);
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -662,6 +758,9 @@ export function PlannerPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
           <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={exportMealPlan}>
+              Export
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={goToPreviousWeek}>
               ◀
             </Button>
@@ -671,6 +770,7 @@ export function PlannerPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
+          {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
           <div className="grid grid-cols-7 gap-3">
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];

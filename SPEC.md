@@ -36,14 +36,13 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
 {
   id: string;
   date: Date;
-  mainDishId: string | "LEFTOVERS" | "EATING_OUT" | null; // Special values for leftover dinners or eating out, null if blocked
+  mainDishId: string | "LEFTOVERS" | "EATING_OUT" | null; // Special values for leftover dinners or eating out
   sideDishIds: string[]; // Array of side dish IDs (no maximum)
   dessertDishId?: string; // Optional dessert
   hasGuests: boolean;
   personAGoesToOffice: boolean; // Next day
   personBGoesToOffice: boolean; // Next day
   locked: boolean; // If true, auto-suggest won't replace this day
-  isBlocked: boolean; // If true, day is intentionally kept clear (no cooking)
   notes?: string;
 }
 ```
@@ -110,7 +109,6 @@ type Rule = {
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
 - **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
-- **Block day**: Ability to block a day to keep it intentionally clear (with optional notes)
 
 ### 3. Rules Engine
 
@@ -167,7 +165,7 @@ type Rule = {
   - Eating Out
 
   Friday 15 February
-  - Day Blocked: Anniversary dinner at home
+  - Tacos
   ```
 
 ### 7. Shopping List (Future Enhancement)
@@ -318,7 +316,6 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Add/edit/delete dishes via form
    - Set status: "enabled" (auto-suggest), "manual_only" (manual selection only), or "disabled" (hidden)
    - Drag "Leftovers" or "Eating Out" special dishes onto days
-   - Use "Block Day" feature to keep specific days clear (with optional notes)
    - Filter by type (main/side/dessert), protein, time, spicy (yes/no)
    - Filters and search terms persist for the session (reset on app reload)
 
@@ -386,7 +383,7 @@ CREATE TABLE dishes (
 CREATE TABLE meal_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   date DATE NOT NULL,
-  main_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL, -- NULL if blocked day
+  main_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL,
   main_dish_type VARCHAR(20) CHECK (main_dish_type IN ('dish', 'leftovers', 'eating_out')), -- Special types for leftover or eating out
   side_dish_ids UUID[], -- Array of side dish IDs (no maximum)
   dessert_dish_id UUID REFERENCES dishes(id) ON DELETE SET NULL,
@@ -394,7 +391,6 @@ CREATE TABLE meal_plans (
   person_a_office_next_day BOOLEAN DEFAULT FALSE,
   person_b_office_next_day BOOLEAN DEFAULT FALSE,
   locked BOOLEAN DEFAULT FALSE, -- Prevents auto-suggest from overwriting
-  is_blocked BOOLEAN DEFAULT FALSE, -- Day intentionally kept clear
   notes TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
