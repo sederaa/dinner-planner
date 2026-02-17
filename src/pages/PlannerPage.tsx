@@ -7,6 +7,8 @@ import { useDishes } from "../hooks/useDishes";
 import { supabase } from "../lib/supabase";
 import type { Dish } from "../types/dish";
 import type { Database } from "../types/database";
+import { DEFAULT_RULES, type Rule, type RuleType } from "../types/rule";
+import { scoreDishForDay, type AppliedRuleResult } from "../utils/scoringEngine";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
@@ -29,6 +31,15 @@ type DayMealAssignment = {
 
 type MealPlanRow = Database["public"]["Tables"]["meal_plans"]["Row"];
 type MealPlanInsert = Database["public"]["Tables"]["meal_plans"]["Insert"];
+
+type RuleConfigRow = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  rule_type: RuleType;
+  parameters: Record<string, unknown>;
+  points: number | null;
+};
 
 type DayMetadata = {
   hasGuests: boolean;
@@ -101,6 +112,7 @@ export function PlannerPage() {
   const [openDayMenuDateKey, setOpenDayMenuDateKey] = useState<string | null>(null);
   const openDayMenuContainerRef = useRef<HTMLDivElement | null>(null);
   const [defaultOfficeDays, setDefaultOfficeDays] = useState<DefaultOfficeDays>(FALLBACK_DEFAULT_OFFICE_DAYS);
+  const [configuredRules, setConfiguredRules] = useState<Rule[]>(DEFAULT_RULES);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
@@ -236,20 +248,139 @@ export function PlannerPage() {
     );
   };
 
+  const mergeRulesFromConfigRows = (rows: RuleConfigRow[]): Rule[] => {
+    const byType = rows.reduce<Partial<Record<RuleType, RuleConfigRow>>>((acc, row) => {
+      if (!acc[row.rule_type]) {
+        acc[row.rule_type] = row;
+      }
+      return acc;
+    }, {});
+
+    return DEFAULT_RULES.map((defaultRule) => {
+      const row = byType[defaultRule.type];
+      if (!row) return defaultRule;
+
+      if (defaultRule.type === "no_consecutive_same_protein") {
+        const value = Number(row.parameters?.maxConsecutiveDays);
+        return {
+          ...defaultRule,
+          id: row.id,
+          name: row.name,
+          enabled: row.enabled,
+          points: row.points ?? defaultRule.points,
+          maxConsecutiveDays: Number.isFinite(value) ? Math.max(1, value) : defaultRule.maxConsecutiveDays,
+        };
+      }
+
+      if (defaultRule.type === "prioritize_ingredient") {
+        const ingredient = typeof row.parameters?.ingredient === "string" ? row.parameters.ingredient : defaultRule.ingredient;
+        return {
+          ...defaultRule,
+          id: row.id,
+          name: row.name,
+          enabled: row.enabled,
+          points: row.points ?? defaultRule.points,
+          ingredient,
+        };
+      }
+
+      if (defaultRule.type === "dish_cooldown_period") {
+        const value = Number(row.parameters?.cooldownDays);
+        return {
+          ...defaultRule,
+          id: row.id,
+          name: row.name,
+          enabled: row.enabled,
+          points: row.points ?? defaultRule.points,
+          cooldownDays: Number.isFinite(value) ? Math.max(1, value) : defaultRule.cooldownDays,
+        };
+      }
+
+      return {
+        ...defaultRule,
+        id: row.id,
+        name: row.name,
+        enabled: row.enabled,
+        points: row.points ?? defaultRule.points,
+      };
+    });
+  };
+
+  const mealAssignmentToDish = (assignment: DayMealAssignment): Dish | null => {
+    if (assignment.special?.id === "EATING_OUT") {
+      return {
+        id: "EATING_OUT",
+        name: "Eating Out",
+        course: ["main"],
+        proteins: [],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: [],
+        status: "manual_only",
+        type: "eating_out",
+      };
+    }
+
+    if (assignment.main?.id === "LEFTOVERS") {
+      return {
+        id: "LEFTOVERS",
+        name: "Leftovers",
+        course: ["main"],
+        proteins: [],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: [],
+        status: "manual_only",
+        type: "leftovers",
+      };
+    }
+
+    if (!assignment.main?.id) return null;
+    return dishes.find((dish) => dish.id === assignment.main?.id) || null;
+  };
+
+  const getRuleViolationsForMeal = (assignment: DayMealAssignment | undefined, metadata: DayMetadata): AppliedRuleResult[] => {
+    if (!assignment) return [];
+
+    const dish = mealAssignmentToDish(assignment);
+    if (!dish) return [];
+
+    const scoringResult = scoreDishForDay({
+      dish,
+      dayContext: {
+        personAOfficeNextDay: metadata.personAOfficeNextDay,
+        personBOfficeNextDay: metadata.personBOfficeNextDay,
+      },
+      rules: configuredRules,
+    });
+
+    return scoringResult.appliedRules.filter((ruleResult) => ruleResult.violated);
+  };
+
+  const getViolationLabel = (violation: AppliedRuleResult) => {
+    const matchingRule = configuredRules.find((rule) => rule.type === violation.ruleType);
+    return matchingRule?.name || violation.reason;
+  };
+
   useEffect(() => {
     if (dishesLoading || mealPlansLoaded) return;
 
     const loadMealPlans = async () => {
       try {
-        const [{ data: settingsData, error: settingsError }, { data, error }] = await Promise.all([
+        const [{ data: settingsData, error: settingsError }, { data, error }, { data: rulesData, error: rulesError }] = await Promise.all([
           (supabase as any).from("user_settings").select("default_office_days").limit(1).maybeSingle(),
           (supabase as any).from("meal_plans").select("*"),
+          (supabase as any).from("rules_config").select("*"),
         ]);
 
         if (settingsError) throw settingsError;
         if (error) throw error;
 
         setDefaultOfficeDays(normalizeOfficeDays(settingsData?.default_office_days));
+
+        if (!rulesError && rulesData) {
+          setConfiguredRules(mergeRulesFromConfigRows((rulesData as RuleConfigRow[]) || []));
+        }
 
         const nextAssignments: Record<string, DayMealAssignment> = {};
         const nextLockedDays: Record<string, boolean> = {};
@@ -747,6 +878,17 @@ export function PlannerPage() {
     }, 2000);
   };
 
+  const editingFinalMeal: DayMealAssignment = editingMeal.special
+    ? {
+        special: editingMeal.special,
+        main: null,
+        sides: [],
+        dessert: null,
+      }
+    : editingMeal;
+
+  const editingViolations = selectedDayKey ? getRuleViolationsForMeal(editingFinalMeal, editingDayMetadata) : [];
+
   return (
     <div>
       <div className="mb-8">
@@ -781,6 +923,7 @@ export function PlannerPage() {
               const isLocked = Boolean(lockedDaysByDate[dateKey]);
               const dayMetadata = resolvedMetadataForDateKey(dateKey);
               const isDayMenuOpen = openDayMenuDateKey === dateKey;
+              const dayViolations = getRuleViolationsForMeal(assignedMeal, dayMetadata);
 
               return (
                 <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-yellow-300 !bg-[#FFFACD] shadow-none" : "border-gray-200 shadow-none"}>
@@ -887,6 +1030,9 @@ export function PlannerPage() {
                             {dayMetadata.personBOfficeNextDay && <span>🏢B</span>}
                             {dayMetadata.hasGuests && <span>👥</span>}
                           </div>
+                        )}
+                        {dayViolations.length > 0 && (
+                          <div className="text-[11px] text-red-700">⚠ {dayViolations.map((violation) => getViolationLabel(violation)).join(" · ")}</div>
                         )}
                       </div>
                     ) : (
@@ -1045,6 +1191,12 @@ export function PlannerPage() {
                     </label>
                   </div>
                 </div>
+
+                {editingViolations.length > 0 && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    ⚠ Rule warning: {editingViolations.map((violation) => getViolationLabel(violation)).join(" · ")}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)}>

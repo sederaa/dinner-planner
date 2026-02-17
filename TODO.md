@@ -35,7 +35,7 @@
 
 - [x] Rules configuration UI with customizable points
 - [ ] Implement all 6 core rules:
-  - [ ] no_fish_before_office_days
+  - [x] no_fish_before_office_days
   - [ ] no_consecutive_same_protein
   - [ ] no_spicy_with_guests
   - [ ] prefer_easy_on_dual_office_days
@@ -44,7 +44,7 @@
 - [ ] Pre-populate rules with default point values
 - [ ] Build scoring/ranking algorithm
 - [ ] Auto-suggest functionality (all days / selected days)
-- [ ] Rule violation indicators
+- [x] Rule violation indicators
 - [ ] Swap/alternative suggestions
 - [ ] Unit tests for rules engine and auto-suggestion logic
 
@@ -69,7 +69,7 @@
 
 **Phase:** 4 - Rules & Auto-Suggest  
 **Last Updated:** 18 February 2026  
-**Next Task:** Implement all 6 core rules
+**Next Task:** Implement no_consecutive_same_protein rule
 
 ---
 

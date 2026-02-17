@@ -25,6 +25,16 @@ const mockData = vi.hoisted(() => {
         keyIngredients: ["chicken"],
         status: "enabled",
       },
+      {
+        id: "dish-fish",
+        name: "Salmon",
+        course: ["main"],
+        proteins: ["fish"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["salmon"],
+        status: "enabled",
+      },
     ],
     mealPlanRows: [
       {
@@ -85,6 +95,12 @@ vi.mock("../lib/supabase", () => ({
         };
       }
 
+      if (table === "rules_config") {
+        return {
+          select: async () => ({ data: [], error: null }),
+        };
+      }
+
       return {
         select: async () => ({ data: [], error: null }),
       };
@@ -134,6 +150,40 @@ describe("PlannerPage", () => {
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "Change" }).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows a rule warning when fish is planned before an office day", async () => {
+    const today = new Date();
+    const monday = new Date(today);
+    const daysFromMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysFromMonday);
+
+    const dateKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+
+    mockData.mealPlanRows = [
+      {
+        id: "fish-row",
+        date: dateKey,
+        main_dish_id: "dish-fish",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: true,
+        person_b_office_next_day: false,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/No fish before office days/i)).toBeInTheDocument();
     });
   });
 });
