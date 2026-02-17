@@ -78,6 +78,7 @@ export function PlannerPage() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [mealEditorOpen, setMealEditorOpen] = useState(false);
   const [assignedMealsByDate, setAssignedMealsByDate] = useState<Record<string, DayMealAssignment>>({});
+  const [lockedDaysByDate, setLockedDaysByDate] = useState<Record<string, boolean>>({});
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
@@ -152,6 +153,11 @@ export function PlannerPage() {
     };
   };
 
+  const hasAnyAssignedMeal = (meal: DayMealAssignment | undefined) => {
+    if (!meal) return false;
+    return meal.special !== null || meal.main !== null || meal.sides.length > 0 || meal.dessert !== null;
+  };
+
   useEffect(() => {
     if (dishesLoading || mealPlansLoaded) return;
 
@@ -161,11 +167,14 @@ export function PlannerPage() {
         if (error) throw error;
 
         const nextAssignments: Record<string, DayMealAssignment> = {};
+        const nextLockedDays: Record<string, boolean> = {};
         ((data as MealPlanRow[]) || []).forEach((row) => {
           nextAssignments[row.date] = assignmentFromRow(row);
+          nextLockedDays[row.date] = Boolean(row.locked);
         });
 
         setAssignedMealsByDate(nextAssignments);
+        setLockedDaysByDate(nextLockedDays);
         setMealPlansLoaded(true);
       } catch (loadError) {
         console.error("Error loading meal plans:", loadError);
@@ -178,6 +187,7 @@ export function PlannerPage() {
   const persistMealAssignment = async (dateKey: string, meal: DayMealAssignment) => {
     const isEatingOut = meal.special?.id === "EATING_OUT";
     const isLeftovers = !isEatingOut && meal.main?.id === "LEFTOVERS";
+    const isLocked = Boolean(lockedDaysByDate[dateKey]);
 
     const payload: MealPlanInsert = {
       date: dateKey,
@@ -185,6 +195,7 @@ export function PlannerPage() {
       main_dish_type: isEatingOut ? "eating_out" : isLeftovers ? "leftovers" : meal.main ? "dish" : null,
       side_dish_ids: isEatingOut ? [] : meal.sides.map((side) => side.id),
       dessert_dish_id: isEatingOut || !meal.dessert ? null : meal.dessert.id,
+      locked: isLocked,
     };
 
     const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -194,6 +205,46 @@ export function PlannerPage() {
   const deleteMealAssignment = async (dateKey: string) => {
     const { error } = await (supabase as any).from("meal_plans").delete().eq("date", dateKey);
     if (error) throw error;
+  };
+
+  const persistDayLock = async (dateKey: string, isLocked: boolean) => {
+    if (isLocked) {
+      const payload: MealPlanInsert = {
+        date: dateKey,
+        locked: true,
+      };
+      const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
+      if (error) throw error;
+      return;
+    }
+
+    const assignedMeal = assignedMealsByDate[dateKey];
+    if (!hasAnyAssignedMeal(assignedMeal)) {
+      await deleteMealAssignment(dateKey);
+      return;
+    }
+
+    const payload: MealPlanInsert = {
+      date: dateKey,
+      locked: false,
+    };
+    const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
+    if (error) throw error;
+  };
+
+  const toggleDayLock = async (date: Date) => {
+    const dateKey = toDateKey(date);
+    const nextLockValue = !Boolean(lockedDaysByDate[dateKey]);
+
+    try {
+      await persistDayLock(dateKey, nextLockValue);
+      setLockedDaysByDate((prev) => ({
+        ...prev,
+        [dateKey]: nextLockValue,
+      }));
+    } catch (lockError) {
+      console.error("Error updating day lock:", lockError);
+    }
   };
 
   const openMealEditorForDate = (date: Date) => {
@@ -259,9 +310,24 @@ export function PlannerPage() {
 
   const clearAssignedMeal = async (date: Date) => {
     const key = toDateKey(date);
+    const isLocked = Boolean(lockedDaysByDate[key]);
 
     try {
-      await deleteMealAssignment(key);
+      if (isLocked) {
+        const payload: MealPlanInsert = {
+          date: key,
+          main_dish_id: null,
+          main_dish_type: null,
+          side_dish_ids: [],
+          dessert_dish_id: null,
+          locked: true,
+        };
+        const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
+        if (error) throw error;
+      } else {
+        await deleteMealAssignment(key);
+      }
+
       setAssignedMealsByDate((prev) => {
         const next = { ...prev };
         delete next[key];
@@ -349,13 +415,27 @@ export function PlannerPage() {
               const isCurrentWeekDay = date >= currentWeekStart && date <= currentWeekEnd;
               const dateKey = toDateKey(date);
               const assignedMeal = assignedMealsByDate[dateKey];
+              const isLocked = Boolean(lockedDaysByDate[dateKey]);
 
               return (
                 <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-yellow-300 !bg-[#FFFACD] shadow-none overflow-hidden" : "border-gray-200 shadow-none"}>
                   <CardContent className="p-3 min-h-[130px]">
-                    <div className="mb-3 border-b border-gray-100 pb-2">
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">{dayName}</div>
-                      <div className="text-sm font-semibold text-gray-900">{formattedDate}</div>
+                    <div className="mb-3 border-b border-gray-100 pb-2 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">{dayName}</div>
+                        <div className="text-sm font-semibold text-gray-900">{formattedDate}</div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isLocked ? "default" : "outline"}
+                        className="h-6 px-2 text-xs"
+                        onClick={() => toggleDayLock(date)}
+                        aria-label={isLocked ? `Unlock ${dayName} ${formattedDate}` : `Lock ${dayName} ${formattedDate}`}
+                        title="Locks this day for auto-suggest only. Manual changes are still allowed."
+                      >
+                        {isLocked ? "🔒" : "🔓"}
+                      </Button>
                     </div>
                     {assignedMeal ? (
                       <div className="space-y-2">
