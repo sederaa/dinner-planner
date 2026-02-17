@@ -33,7 +33,7 @@
 
 ## Phase 4: Rules & Auto-Suggest (Days 5-6)
 
-- [ ] Rules configuration UI with customizable points
+- [x] Rules configuration UI with customizable points
 - [ ] Implement all 6 core rules:
   - [ ] no_fish_before_office_days
   - [ ] no_consecutive_same_protein
@@ -67,9 +67,9 @@
 
 ## Current Status
 
-**Phase:** 3 - Calendar & Manual Planning  
+**Phase:** 4 - Rules & Auto-Suggest  
 **Last Updated:** 18 February 2026  
-**Next Task:** Rules configuration UI with customizable points
+**Next Task:** Implement all 6 core rules
 
 ---
 
