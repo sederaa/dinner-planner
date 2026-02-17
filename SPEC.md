@@ -105,8 +105,8 @@ type Rule = {
   - Suggest for all unlocked days
   - Suggest for selected days only
 - Lock/unlock individual days to prevent auto-suggest from overwriting that day (manual add/edit/clear is still allowed)
-- Mark which days have guests
-- Mark next-day office attendance for both people
+- Mark guests and next-day office attendance from each day's `⋯` context menu
+- Show day icons only when enabled (e.g., 👥, 🏢A, 🏢B)
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
 - **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
@@ -293,8 +293,9 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Modal/drawer opens with dish list (filterable by type)
    - Drag or click to add: Main dish → Side dishes → Dessert
    - Dragging dishes onto a day always adds to existing dishes (never replaces)
-   - Set: Has guests? [Y/N], Office tomorrow? (Person A/B checkboxes)
-     - Office days pre-populated from defaultOfficeDays settings, but can be overridden per day
+   - Use each day's `⋯` context menu to toggle: Guests coming, Person A office next day, Person B office next day
+     - Office days are pre-populated from `defaultOfficeDays` settings, and can be overridden per day
+   - `Clear meal` is available in the same `⋯` context menu
    - Meal appears on calendar, shows any rule violations
   - Can lock/unlock the day using lock icon
   - Lock applies only to auto-generation; manual changes remain available while locked
