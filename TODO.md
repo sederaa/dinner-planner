@@ -45,7 +45,8 @@
 - [x] Build scoring/ranking algorithm
 - [x] Auto-suggest functionality (all days / selected days)
 - [x] Rule violation indicators
-- [ ] Swap/alternative suggestions
+- [x] Swap/alternative suggestions
+- [x] Planner UX refactor: separate Day Edit modal; inline ranked main options in Edit Meal; remove standalone Swap action
 - [ ] Unit tests for rules engine and auto-suggestion logic
 
 ## Phase 5: Polish & History (Day 7)
@@ -69,7 +70,7 @@
 
 **Phase:** 4 - Rules & Auto-Suggest  
 **Last Updated:** 18 February 2026  
-**Next Task:** Swap/alternative suggestions
+**Next Task:** Unit tests for rules engine and auto-suggestion logic
 
 ---
 

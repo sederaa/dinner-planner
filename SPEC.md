@@ -104,7 +104,10 @@ type Rule = {
   - Suggest for all unlocked days
   - Suggest for selected days only
 - Lock/unlock individual days to prevent auto-suggest from overwriting that day (manual add/edit/clear is still allowed)
-- Mark guests and next-day office attendance from each day's `⋯` context menu
+- Edit day metadata (guests and next-day office attendance) from each day's `⋯` context menu via a dedicated **Day Edit** modal
+- Keep **Edit Meal** focused on meal selection only (main + sides + dessert), without day metadata controls
+- In **Edit Meal**, show ranked main dish candidates inline for all mains, including score and compact violation summary
+- Show full per-rule breakdown for each main option via title tooltip (title attribute) for debugging and transparency
 - Show day icons only when enabled (e.g., 👥, 🏢A, 🏢B)
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
@@ -135,7 +138,7 @@ type Rule = {
 - If no suitable dishes found for a day, suggest the "least bad" option with warnings
 - Show compliance score for manual plans
 - Highlight rule violations with explanations
-- "Swap" functionality to suggest alternatives for individual days
+- Alternatives are surfaced inline in **Edit Meal** ranked mains (no separate Swap action/button)
 
 ### 5. Historical View
 

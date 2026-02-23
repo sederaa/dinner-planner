@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { useDishes } from "../hooks/useDishes";
 import { ensureRulesConfigSeeded, type RuleConfigRow } from "../lib/rulesConfig";
 import { supabase } from "../lib/supabase";
@@ -108,17 +108,19 @@ export function PlannerPage() {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [autoSuggestMessage, setAutoSuggestMessage] = useState<string | null>(null);
   const [selectedDaysByDate, setSelectedDaysByDate] = useState<Record<string, boolean>>({});
+  const [dayEditorOpen, setDayEditorOpen] = useState(false);
+  const [dayEditorDate, setDayEditorDate] = useState<Date | null>(null);
+  const [editingDayMetadata, setEditingDayMetadata] = useState<DayMetadata>({
+    hasGuests: false,
+    personAOfficeNextDay: true,
+    personBOfficeNextDay: true,
+  });
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
     main: null,
     sides: [],
     dessert: null,
-  });
-  const [editingDayMetadata, setEditingDayMetadata] = useState<DayMetadata>({
-    hasGuests: false,
-    personAOfficeNextDay: true,
-    personBOfficeNextDay: true,
   });
 
   const days = useMemo(() => {
@@ -172,6 +174,10 @@ export function PlannerPage() {
   }, [days, selectedDaysByDate]);
   const selectedDayLabel = selectedDay
     ? new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(selectedDay)
+    : "";
+  const dayEditorDateKey = dayEditorDate ? toDateKey(dayEditorDate) : null;
+  const dayEditorLabel = dayEditorDate
+    ? new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(dayEditorDate)
     : "";
 
   const dishOptionById = (id: string | null | undefined): MealOption | null => {
@@ -529,10 +535,17 @@ export function PlannerPage() {
   };
 
   const chooseSuggestedMainForDate = (dateKey: string, assignmentOverrides: Record<string, DayMealAssignment> = {}): MealOption | null => {
-    if (autoSuggestableMainDishes.length === 0) return null;
+    const ranked = getRankedMainCandidatesForDate(dateKey, assignmentOverrides);
+
+    const best = ranked[0]?.dish;
+    return best ? { id: best.id, name: best.name } : null;
+  };
+
+  const getRankedMainCandidatesForDate = (dateKey: string, assignmentOverrides: Record<string, DayMealAssignment> = {}) => {
+    if (autoSuggestableMainDishes.length === 0) return [];
 
     const metadata = resolvedMetadataForDateKey(dateKey);
-    const ranked = rankDishesForDay({
+    return rankDishesForDay({
       dishes: autoSuggestableMainDishes,
       dayContext: {
         hasGuests: metadata.hasGuests,
@@ -542,9 +555,6 @@ export function PlannerPage() {
       rules: configuredRules,
       previousDishes: getPreviousDishesForDateKey(dateKey, assignmentOverrides),
     });
-
-    const best = ranked[0]?.dish;
-    return best ? { id: best.id, name: best.name } : null;
   };
 
   const buildRuleSummary = (appliedRules: AppliedRuleResult[]) => {
@@ -559,6 +569,20 @@ export function PlannerPage() {
         return `${ruleLabel}: ${deltaLabel} (${stateLabel})`;
       })
       .join("\n");
+  };
+
+  const buildCompactViolationSummary = (appliedRules: AppliedRuleResult[]) => {
+    const violations = appliedRules.filter((rule) => rule.violated);
+    if (violations.length === 0) return "No violations";
+
+    const labels = violations
+      .map((violation) => {
+        const matchingRule = configuredRules.find((rule) => rule.type === violation.ruleType);
+        return matchingRule?.name || violation.ruleType;
+      })
+      .slice(0, 2);
+
+    return `${violations.length} violation${violations.length === 1 ? "" : "s"}: ${labels.join(" · ")}`;
   };
 
   const getMealDebugTitle = (dateKey: string, assignment: DayMealAssignment | undefined) => {
@@ -576,18 +600,7 @@ export function PlannerPage() {
       return "No main dish selected";
     }
 
-    const metadata = resolvedMetadataForDateKey(dateKey);
-    const previousDishes = getPreviousDishesForDateKey(dateKey);
-    const ranked = rankDishesForDay({
-      dishes: autoSuggestableMainDishes,
-      dayContext: {
-        hasGuests: metadata.hasGuests,
-        personAOfficeNextDay: metadata.personAOfficeNextDay,
-        personBOfficeNextDay: metadata.personBOfficeNextDay,
-      },
-      rules: configuredRules,
-      previousDishes,
-    });
+    const ranked = getRankedMainCandidatesForDate(dateKey);
 
     const selected = ranked.find((entry) => entry.dish.id === assignment.main?.id);
     if (!selected) {
@@ -615,6 +628,38 @@ export function PlannerPage() {
     ];
 
     return lines.join("\n");
+  };
+
+  const openDayEditorForDate = (date: Date) => {
+    const dateKey = toDateKey(date);
+    setEditingDayMetadata(resolvedMetadataForDateKey(dateKey));
+    setDayEditorDate(date);
+    setDayEditorOpen(true);
+    setOpenDayMenuDateKey(null);
+  };
+
+  const saveDayMetadataFromEditor = async () => {
+    if (!dayEditorDateKey) return;
+
+    try {
+      await persistDayMetadata(dayEditorDateKey, editingDayMetadata);
+      setDayMetadataByDate((prev) => {
+        const shouldKeep = hasMetadataOverride(dayEditorDateKey, editingDayMetadata);
+        if (!shouldKeep) {
+          const next = { ...prev };
+          delete next[dayEditorDateKey];
+          return next;
+        }
+
+        return {
+          ...prev,
+          [dayEditorDateKey]: editingDayMetadata,
+        };
+      });
+      setDayEditorOpen(false);
+    } catch (metadataError) {
+      console.error("Error saving day details:", metadataError);
+    }
   };
 
   const autoSuggestForDateKeys = async (requestedDateKeys: string[]) => {
@@ -715,68 +760,6 @@ export function PlannerPage() {
     if (error) throw error;
   };
 
-  const toggleGuestsForDate = async (date: Date) => {
-    const dateKey = toDateKey(date);
-    const current = resolvedMetadataForDateKey(dateKey);
-    const next: DayMetadata = {
-      ...current,
-      hasGuests: !current.hasGuests,
-    };
-
-    try {
-      await persistDayMetadata(dateKey, next);
-      setDayMetadataByDate((prev) => {
-        const shouldKeep = hasMetadataOverride(dateKey, next);
-        if (!shouldKeep) {
-          const stateWithoutDate = { ...prev };
-          delete stateWithoutDate[dateKey];
-          return stateWithoutDate;
-        }
-
-        return {
-          ...prev,
-          [dateKey]: next,
-        };
-      });
-    } catch (metadataError) {
-      console.error("Error updating guests for day:", metadataError);
-    }
-  };
-
-  const toggleOfficeForDate = async (date: Date, person: "A" | "B") => {
-    const dateKey = toDateKey(date);
-    const current = resolvedMetadataForDateKey(dateKey);
-    const next: DayMetadata =
-      person === "A"
-        ? {
-            ...current,
-            personAOfficeNextDay: !current.personAOfficeNextDay,
-          }
-        : {
-            ...current,
-            personBOfficeNextDay: !current.personBOfficeNextDay,
-          };
-
-    try {
-      await persistDayMetadata(dateKey, next);
-      setDayMetadataByDate((prev) => {
-        const shouldKeep = hasMetadataOverride(dateKey, next);
-        if (!shouldKeep) {
-          const stateWithoutDate = { ...prev };
-          delete stateWithoutDate[dateKey];
-          return stateWithoutDate;
-        }
-
-        return {
-          ...prev,
-          [dateKey]: next,
-        };
-      });
-    } catch (metadataError) {
-      console.error("Error updating office day:", metadataError);
-    }
-  };
-
   const openMealEditorForDate = (date: Date) => {
     const key = toDateKey(date);
     const existing = assignedMealsByDate[key];
@@ -799,7 +782,6 @@ export function PlannerPage() {
       }
     );
 
-    setEditingDayMetadata(resolvedMetadataForDateKey(key));
     setOpenDayMenuDateKey(null);
 
     setSelectedDay(date);
@@ -819,19 +801,16 @@ export function PlannerPage() {
       : editingMeal;
 
     const hasAny = finalMeal.special || finalMeal.main || finalMeal.sides.length > 0 || finalMeal.dessert;
-    const shouldKeepMetadataRow = hasMetadataOverride(selectedDayKey, editingDayMetadata);
+    const metadata = resolvedMetadataForDateKey(selectedDayKey);
+    const shouldKeepMetadataRow = hasMetadataOverride(selectedDayKey, metadata);
     const isLocked = Boolean(lockedDaysByDate[selectedDayKey]);
 
     try {
       if (hasAny) {
-        await persistMealAssignment(selectedDayKey, finalMeal, editingDayMetadata);
+        await persistMealAssignment(selectedDayKey, finalMeal, metadata);
         setAssignedMealsByDate((prev) => ({
           ...prev,
           [selectedDayKey]: finalMeal,
-        }));
-        setDayMetadataByDate((prev) => ({
-          ...prev,
-          [selectedDayKey]: editingDayMetadata,
         }));
       } else {
         if (isLocked || shouldKeepMetadataRow) {
@@ -841,9 +820,9 @@ export function PlannerPage() {
             main_dish_type: null,
             side_dish_ids: [],
             dessert_dish_id: null,
-            has_guests: editingDayMetadata.hasGuests,
-            person_a_office_next_day: editingDayMetadata.personAOfficeNextDay,
-            person_b_office_next_day: editingDayMetadata.personBOfficeNextDay,
+            has_guests: metadata.hasGuests,
+            person_a_office_next_day: metadata.personAOfficeNextDay,
+            person_b_office_next_day: metadata.personBOfficeNextDay,
             locked: isLocked,
           };
           const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -858,18 +837,6 @@ export function PlannerPage() {
           return next;
         });
 
-        setDayMetadataByDate((prev) => {
-          if (!shouldKeepMetadataRow) {
-            const next = { ...prev };
-            delete next[selectedDayKey];
-            return next;
-          }
-
-          return {
-            ...prev,
-            [selectedDayKey]: editingDayMetadata,
-          };
-        });
       }
       setMealEditorOpen(false);
     } catch (saveError) {
@@ -1122,7 +1089,8 @@ export function PlannerPage() {
       }
     : editingMeal;
 
-  const editingViolations = selectedDayKey ? getRuleViolationsForMeal(selectedDayKey, editingFinalMeal, editingDayMetadata) : [];
+  const rankedMainCandidatesForSelectedDay = selectedDayKey ? getRankedMainCandidatesForDate(selectedDayKey) : [];
+  const rankedMainCandidatesById = new Map(rankedMainCandidatesForSelectedDay.map((entry) => [entry.dish.id, entry]));
   const plannedMealsInViewCount = days.reduce((count, date) => {
     const dateKey = toDateKey(date);
     return count + (hasAnyAssignedMeal(assignedMealsByDate[dateKey]) ? 1 : 0);
@@ -1230,32 +1198,9 @@ export function PlannerPage() {
                               <button
                                 type="button"
                                 className="w-full rounded px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
-                                onClick={async () => {
-                                  await toggleGuestsForDate(date);
-                                  setOpenDayMenuDateKey(null);
-                                }}
+                                onClick={() => openDayEditorForDate(date)}
                               >
-                                {dayMetadata.hasGuests ? "✓ " : ""}Guests coming
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
-                                onClick={async () => {
-                                  await toggleOfficeForDate(date, "A");
-                                  setOpenDayMenuDateKey(null);
-                                }}
-                              >
-                                {dayMetadata.personAOfficeNextDay ? "✓ " : ""}Person A office next day
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
-                                onClick={async () => {
-                                  await toggleOfficeForDate(date, "B");
-                                  setOpenDayMenuDateKey(null);
-                                }}
-                              >
-                                {dayMetadata.personBOfficeNextDay ? "✓ " : ""}Person B office next day
+                                Edit day details
                               </button>
                               <div className="my-1 border-t border-gray-200" />
                               <button
@@ -1292,9 +1237,9 @@ export function PlannerPage() {
                         </div>
                         {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
                           <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                            {dayMetadata.personAOfficeNextDay && <span>🏢A</span>}
-                            {dayMetadata.personBOfficeNextDay && <span>🏢B</span>}
-                            {dayMetadata.hasGuests && <span>👥</span>}
+                            {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
+                            {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
+                            {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
                           </div>
                         )}
                         {dayViolations.length > 0 && (
@@ -1309,9 +1254,9 @@ export function PlannerPage() {
                         </Button>
                         {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
                           <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                            {dayMetadata.personAOfficeNextDay && <span>🏢A</span>}
-                            {dayMetadata.personBOfficeNextDay && <span>🏢B</span>}
-                            {dayMetadata.hasGuests && <span>👥</span>}
+                            {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
+                            {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
+                            {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
                           </div>
                         )}
                       </div>
@@ -1328,6 +1273,7 @@ export function PlannerPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit meal for {selectedDayLabel}</DialogTitle>
+            <DialogDescription>Select meal components. Day details are managed from the day actions menu.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
@@ -1352,16 +1298,21 @@ export function PlannerPage() {
                     <div className="grid gap-2">
                       {mainMealOptions.map((meal) => {
                         const isSelected = editingMeal.main?.id === meal.id;
+                        const rankedEntry = rankedMainCandidatesById.get(meal.id);
+                        const compactLine = meal.id === "LEFTOVERS" ? "Manual only" : rankedEntry ? `Score ${rankedEntry.score} · ${buildCompactViolationSummary(rankedEntry.appliedRules)}` : "Manual only";
+                        const detailsTitle = meal.id === "LEFTOVERS" ? "Leftovers (manual-only, excluded from auto-suggest scoring)" : rankedEntry ? `Score: ${rankedEntry.score}\n${buildRuleSummary(rankedEntry.appliedRules)}` : `${meal.name}\nManual-only or non-auto-suggestable main dish`;
                         return (
                           <Button
                             key={meal.id}
                             type="button"
                             variant={isSelected ? "default" : "outline"}
-                            className="w-full justify-start"
+                            className="w-full justify-between"
                             disabled={editingMeal.special !== null}
                             onClick={() => setMainMeal(meal)}
+                            title={detailsTitle}
                           >
-                            {meal.name}
+                            <span className="text-left">{meal.name}</span>
+                            <span className="text-[11px] opacity-80 ml-2 text-right">{compactLine}</span>
                           </Button>
                         );
                       })}
@@ -1428,42 +1379,6 @@ export function PlannerPage() {
                   )}
                 </div>
 
-                <div className="space-y-3 border-t border-gray-100 pt-3">
-                  <div className="text-sm font-medium text-gray-900">Day details</div>
-
-                  <label className="inline-flex items-center text-sm gap-2">
-                    <Checkbox
-                      checked={editingDayMetadata.hasGuests}
-                      onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, hasGuests: checked === true }))}
-                    />
-                    Guests coming
-                  </label>
-
-                  <div className="text-sm font-medium text-gray-900">Office next day</div>
-                  <div className="flex gap-4">
-                    <label className="inline-flex items-center text-sm gap-2">
-                      <Checkbox
-                        checked={editingDayMetadata.personAOfficeNextDay}
-                        onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personAOfficeNextDay: checked === true }))}
-                      />
-                      Person A
-                    </label>
-                    <label className="inline-flex items-center text-sm gap-2">
-                      <Checkbox
-                        checked={editingDayMetadata.personBOfficeNextDay}
-                        onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personBOfficeNextDay: checked === true }))}
-                      />
-                      Person B
-                    </label>
-                  </div>
-                </div>
-
-                {editingViolations.length > 0 && (
-                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    ⚠ Rule warning: {editingViolations.map((violation) => getViolationLabel(violation)).join(" · ")}
-                  </div>
-                )}
-
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)}>
                     Cancel
@@ -1474,6 +1389,52 @@ export function PlannerPage() {
                 </div>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dayEditorOpen} onOpenChange={setDayEditorOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit day details for {dayEditorLabel}</DialogTitle>
+            <DialogDescription>These settings are saved separately and used by meal scoring in Edit Meal.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <label className="inline-flex items-center text-sm gap-2">
+              <Checkbox
+                checked={editingDayMetadata.hasGuests}
+                onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, hasGuests: checked === true }))}
+              />
+              Guests coming
+            </label>
+
+            <div className="text-sm font-medium text-gray-900">Office next day</div>
+            <div className="flex gap-4">
+              <label className="inline-flex items-center text-sm gap-2">
+                <Checkbox
+                  checked={editingDayMetadata.personAOfficeNextDay}
+                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personAOfficeNextDay: checked === true }))}
+                />
+                Person A
+              </label>
+              <label className="inline-flex items-center text-sm gap-2">
+                <Checkbox
+                  checked={editingDayMetadata.personBOfficeNextDay}
+                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personBOfficeNextDay: checked === true }))}
+                />
+                Person B
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setDayEditorOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={saveDayMetadataFromEditor}>
+                Save day
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

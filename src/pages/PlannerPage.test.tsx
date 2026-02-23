@@ -402,4 +402,65 @@ describe("PlannerPage", () => {
       expect(screen.queryByRole("button", { name: "Change" })).not.toBeInTheDocument();
     });
   });
+
+  it("opens Day Edit modal from day menu and saves", async () => {
+    mockData.mealPlanRows = [] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /Open actions for/i }).length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Edit day details" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Edit day details for/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Save day" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /Edit day details for/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows inline score metadata in Edit Meal main options and no Swap button", async () => {
+    const dateKey = getMondayDateKey();
+
+    mockData.mealPlanRows = [
+      {
+        id: "swap-row",
+        date: dateKey,
+        main_dish_id: "dish-fish",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: true,
+        person_b_office_next_day: false,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main: Salmon")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Swap" })).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Edit meal for/i })).toBeInTheDocument();
+      expect(screen.getByText(/Score 100/i)).toBeInTheDocument();
+      expect(screen.queryByText("Day details")).not.toBeInTheDocument();
+    });
+  });
 });
