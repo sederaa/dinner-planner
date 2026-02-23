@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { useDishes } from "../hooks/useDishes";
+import { ensureRulesConfigSeeded, type RuleConfigRow } from "../lib/rulesConfig";
 import { supabase } from "../lib/supabase";
 import type { Dish } from "../types/dish";
 import type { Database } from "../types/database";
@@ -31,15 +32,6 @@ type DayMealAssignment = {
 
 type MealPlanRow = Database["public"]["Tables"]["meal_plans"]["Row"];
 type MealPlanInsert = Database["public"]["Tables"]["meal_plans"]["Insert"];
-
-type RuleConfigRow = {
-  id: string;
-  name: string;
-  enabled: boolean;
-  rule_type: RuleType;
-  parameters: Record<string, unknown>;
-  points: number | null;
-};
 
 type DayMetadata = {
   hasGuests: boolean;
@@ -387,10 +379,10 @@ export function PlannerPage() {
 
     const loadMealPlans = async () => {
       try {
-        const [{ data: settingsData, error: settingsError }, { data, error }, { data: rulesData, error: rulesError }] = await Promise.all([
+        const [{ data: settingsData, error: settingsError }, { data, error }, rulesData] = await Promise.all([
           (supabase as any).from("user_settings").select("default_office_days").limit(1).maybeSingle(),
           (supabase as any).from("meal_plans").select("*"),
-          (supabase as any).from("rules_config").select("*"),
+          ensureRulesConfigSeeded(),
         ]);
 
         if (settingsError) throw settingsError;
@@ -398,7 +390,7 @@ export function PlannerPage() {
 
         setDefaultOfficeDays(normalizeOfficeDays(settingsData?.default_office_days));
 
-        if (!rulesError && rulesData) {
+        if (rulesData) {
           setConfiguredRules(mergeRulesFromConfigRows((rulesData as RuleConfigRow[]) || []));
         }
 

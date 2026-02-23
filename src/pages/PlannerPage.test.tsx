@@ -1,9 +1,18 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlannerPage } from "./PlannerPage";
 import type { Database } from "../types/database";
 
 type MealPlanRow = Database["public"]["Tables"]["meal_plans"]["Row"];
+
+const getMondayDateKey = () => {
+  const today = new Date();
+  const monday = new Date(today);
+  const daysFromMonday = (monday.getDay() + 6) % 7;
+  monday.setDate(monday.getDate() - daysFromMonday);
+
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+};
 
 const mockData = vi.hoisted(() => {
   const today = new Date();
@@ -54,6 +63,14 @@ const mockData = vi.hoisted(() => {
         updated_at: new Date().toISOString(),
       },
     ] as MealPlanRow[],
+    rulesConfigRows: [] as Array<{
+      id: string;
+      name: string;
+      enabled: boolean;
+      rule_type: string;
+      parameters: Record<string, unknown>;
+      points: number | null;
+    }>,
   };
 });
 
@@ -97,7 +114,20 @@ vi.mock("../lib/supabase", () => ({
 
       if (table === "rules_config") {
         return {
-          select: async () => ({ data: [], error: null }),
+          select: async () => ({ data: mockData.rulesConfigRows, error: null }),
+          insert: async (payload: Array<Record<string, unknown>>) => {
+            payload.forEach((entry, index) => {
+              mockData.rulesConfigRows.push({
+                id: `rule-seed-${mockData.rulesConfigRows.length + index + 1}`,
+                name: String(entry.name || ""),
+                enabled: Boolean(entry.enabled),
+                rule_type: String(entry.rule_type || ""),
+                parameters: (entry.parameters as Record<string, unknown>) || {},
+                points: typeof entry.points === "number" ? entry.points : null,
+              });
+            });
+            return { error: null };
+          },
         };
       }
 
@@ -109,6 +139,40 @@ vi.mock("../lib/supabase", () => ({
 }));
 
 describe("PlannerPage", () => {
+  beforeEach(() => {
+    const dateKey = getMondayDateKey();
+    mockData.rulesConfigRows = [];
+    mockData.mealPlanRows = [
+      {
+        id: "metadata-only-row",
+        date: dateKey,
+        main_dish_id: null,
+        main_dish_type: null,
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: true,
+        person_a_office_next_day: false,
+        person_b_office_next_day: true,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+  });
+
+  it("seeds default rules when rules_config is empty", async () => {
+    mockData.mealPlanRows = [] as MealPlanRow[];
+    mockData.rulesConfigRows = [];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(mockData.rulesConfigRows.length).toBeGreaterThanOrEqual(6);
+    });
+  });
+
   it("does not show a scheduled meal when the row only contains metadata", async () => {
     render(<PlannerPage />);
 

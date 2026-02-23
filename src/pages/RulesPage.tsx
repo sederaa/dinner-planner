@@ -3,17 +3,9 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
+import { ensureRulesConfigSeeded, type RuleConfigRow } from "../lib/rulesConfig";
 import { supabase } from "../lib/supabase";
 import { DEFAULT_RULES, type Rule, type RuleType } from "../types/rule";
-
-type RuleConfigRow = {
-  id: string;
-  name: string;
-  enabled: boolean;
-  rule_type: RuleType;
-  parameters: Record<string, unknown>;
-  points: number | null;
-};
 
 type EditableRule = {
   id?: string;
@@ -66,10 +58,9 @@ export function RulesPage() {
   useEffect(() => {
     const loadRules = async () => {
       try {
-        const { data, error } = await (supabase as any).from("rules_config").select("*");
-        if (error) throw error;
+        const rowsData = await ensureRulesConfigSeeded();
 
-        const rows = ((data as RuleConfigRow[]) || []).reduce<Record<RuleType, RuleConfigRow>>((acc, row) => {
+        const rows = ((rowsData as RuleConfigRow[]) || []).reduce<Record<RuleType, RuleConfigRow>>((acc, row) => {
           if (!acc[row.rule_type]) {
             acc[row.rule_type] = row;
           }

@@ -34,14 +34,14 @@
 ## Phase 4: Rules & Auto-Suggest (Days 5-6)
 
 - [x] Rules configuration UI with customizable points
-- [ ] Implement all 6 core rules:
+- [x] Implement all 6 core rules:
   - [x] no_fish_before_office_days
-  - [ ] no_consecutive_same_protein
-  - [ ] no_spicy_with_guests
-  - [ ] prefer_easy_on_dual_office_days
-  - [ ] prioritize_ingredient
-  - [ ] dish_cooldown_period
-- [ ] Pre-populate rules with default point values
+  - [x] no_consecutive_same_protein
+  - [x] no_spicy_with_guests
+  - [x] prefer_easy_on_dual_office_days
+  - [x] prioritize_ingredient
+  - [x] dish_cooldown_period
+- [x] Pre-populate rules with default point values
 - [x] Build scoring/ranking algorithm
 - [x] Auto-suggest functionality (all days / selected days)
 - [x] Rule violation indicators
@@ -69,7 +69,7 @@
 
 **Phase:** 4 - Rules & Auto-Suggest  
 **Last Updated:** 18 February 2026  
-**Next Task:** Implement no_consecutive_same_protein rule
+**Next Task:** Swap/alternative suggestions
 
 ---
 
