@@ -229,6 +229,92 @@ describe("scoreDishForDay", () => {
     expect(result.appliedRules.some((entry) => entry.ruleType === "no_consecutive_same_protein" && entry.violated)).toBe(true);
     expect(result.appliedRules.some((entry) => entry.ruleType === "dish_cooldown_period" && entry.violated)).toBe(true);
   });
+
+  it("does not penalize when consecutive threshold is not reached", () => {
+    const rules: Rule[] = [
+      {
+        id: "rule-variety",
+        type: "no_consecutive_same_protein",
+        name: "Vary proteins",
+        enabled: true,
+        points: -20,
+        maxConsecutiveDays: 2,
+      },
+    ];
+
+    const result = scoreDishForDay({
+      dish: chickenDish,
+      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      rules,
+      previousDishes: [
+        {
+          ...chickenDish,
+          id: "dish-other-chicken",
+          name: "Chicken Wrap",
+        },
+      ],
+      baseScore: 100,
+    });
+
+    expect(result.score).toBe(100);
+    expect(result.appliedRules[0].violated).toBe(false);
+  });
+
+  it("ignores cooldown repeats outside cooldown window", () => {
+    const rules: Rule[] = [
+      {
+        id: "rule-cooldown",
+        type: "dish_cooldown_period",
+        name: "Dish cooldown",
+        enabled: true,
+        points: -100,
+        cooldownDays: 2,
+      },
+    ];
+
+    const result = scoreDishForDay({
+      dish: chickenDish,
+      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      rules,
+      previousDishes: [
+        fishDish,
+        {
+          ...spicyDish,
+          id: "dish-spicy-2",
+          name: "Spicy Beef Curry 2",
+        },
+        chickenDish,
+      ],
+      baseScore: 100,
+    });
+
+    expect(result.score).toBe(100);
+    expect(result.appliedRules[0].violated).toBe(false);
+  });
+
+  it("does not apply disabled rules", () => {
+    const rules: Rule[] = [
+      {
+        id: "rule-spicy-disabled",
+        type: "no_spicy_with_guests",
+        name: "No spicy dishes with guests",
+        enabled: false,
+        points: -30,
+      },
+    ];
+
+    const result = scoreDishForDay({
+      dish: spicyDish,
+      dayContext: { hasGuests: true, personAOfficeNextDay: false, personBOfficeNextDay: false },
+      rules,
+      baseScore: 100,
+    });
+
+    expect(result.score).toBe(100);
+    expect(result.appliedRules[0].delta).toBe(0);
+    expect(result.appliedRules[0].violated).toBe(false);
+    expect(result.appliedRules[0].reason).toMatch(/Rule disabled/i);
+  });
 });
 
 describe("rankDishesForDay", () => {
@@ -256,5 +342,29 @@ describe("rankDishesForDay", () => {
     expect(ranked[0].dish.id).toBe(easyBeefDish.id);
     expect(ranked[0].score).toBe(120);
     expect(ranked[2].dish.id).toBe(fishDish.id);
+  });
+
+  it("breaks score ties by dish name", () => {
+    const alphaDish: Dish = {
+      ...chickenDish,
+      id: "dish-alpha",
+      name: "Alpha Bowl",
+    };
+
+    const zetaDish: Dish = {
+      ...chickenDish,
+      id: "dish-zeta",
+      name: "Zeta Bowl",
+    };
+
+    const ranked = rankDishesForDay({
+      dishes: [zetaDish, alphaDish],
+      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      rules: [],
+      baseScore: 100,
+    });
+
+    expect(ranked[0].dish.name).toBe("Alpha Bowl");
+    expect(ranked[1].dish.name).toBe("Zeta Bowl");
   });
 });

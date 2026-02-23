@@ -47,7 +47,7 @@
 - [x] Rule violation indicators
 - [x] Swap/alternative suggestions
 - [x] Planner UX refactor: separate Day Edit modal; inline ranked main options in Edit Meal; remove standalone Swap action
-- [ ] Unit tests for rules engine and auto-suggestion logic
+- [x] Unit tests for rules engine and auto-suggestion logic
 
 ## Phase 5: Polish & History (Day 7)
 
@@ -70,7 +70,7 @@
 
 **Phase:** 4 - Rules & Auto-Suggest  
 **Last Updated:** 18 February 2026  
-**Next Task:** Unit tests for rules engine and auto-suggestion logic
+**Next Task:** Historical view for past meal plans
 
 ---
 

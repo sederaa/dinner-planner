@@ -141,6 +141,28 @@ vi.mock("../lib/supabase", () => ({
 describe("PlannerPage", () => {
   beforeEach(() => {
     const dateKey = getMondayDateKey();
+    mockData.dishes = [
+      {
+        id: "dish-1",
+        name: "Test Main Dish",
+        course: ["main"],
+        proteins: ["chicken"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["chicken"],
+        status: "enabled",
+      },
+      {
+        id: "dish-fish",
+        name: "Salmon",
+        course: ["main"],
+        proteins: ["fish"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["salmon"],
+        status: "enabled",
+      },
+    ];
     mockData.rulesConfigRows = [];
     mockData.mealPlanRows = [
       {
@@ -282,6 +304,79 @@ describe("PlannerPage", () => {
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(13);
+    });
+  });
+
+  it("auto-suggest all respects locked days", async () => {
+    const mondayKey = getMondayDateKey();
+
+    mockData.mealPlanRows = [
+      {
+        id: "locked-day",
+        date: mondayKey,
+        main_dish_id: null,
+        main_dish_type: null,
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: true,
+        person_b_office_next_day: true,
+        locked: true,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(14);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(1);
+    });
+  });
+
+  it("shows feedback when no enabled main dishes are available", async () => {
+    mockData.mealPlanRows = [] as MealPlanRow[];
+    mockData.dishes = [
+      {
+        id: "dish-manual",
+        name: "Manual Main",
+        course: ["main"],
+        proteins: ["chicken"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["chicken"],
+        status: "manual_only",
+      },
+      {
+        id: "dish-disabled",
+        name: "Disabled Main",
+        course: ["main"],
+        proteins: ["fish"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["fish"],
+        status: "disabled",
+      },
+    ];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(14);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("No enabled main dishes available")).toBeInTheDocument();
     });
   });
 
