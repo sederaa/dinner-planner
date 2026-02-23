@@ -27,6 +27,25 @@ source ~/.nvm/nvm.sh && nvm use 25 && cd "/Users/sebastianderaadt/Documents/Proj
 
 The app will be available at http://localhost:5173/
 
+### Running Tests (non-watch)
+
+To avoid interactive Vitest watch mode hanging in terminal sessions, use one-shot test commands:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run
+```
+
+Run specific files:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run -- src/pages/PlannerPage.test.tsx
+```
+
+Notes:
+
+- `npm test` runs `vitest` (watch mode)
+- `npm run test:run` runs `vitest run` (non-watch, exits automatically)
+
 ### Supabase RLS setup
 
 If Supabase flags `RLS Disabled in Public`, run the migration in:

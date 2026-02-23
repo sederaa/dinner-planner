@@ -46,3 +46,8 @@ source ~/.nvm/nvm.sh && nvm use 25 && npm run dev
 - Component-based architecture
 - Comprehensive unit tests for business logic
 - Mobile-responsive design
+
+## Test Command Convention
+
+- Prefer one-shot Vitest commands to avoid hanging watch sessions.
+- Use `npm run test:run` (or `npm run test:run -- <path>`) instead of `npm test` in automated runs.
