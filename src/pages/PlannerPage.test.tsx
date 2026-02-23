@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PlannerPage } from "./PlannerPage";
 import type { Database } from "../types/database";
@@ -184,6 +184,40 @@ describe("PlannerPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/No fish before office days/i)).toBeInTheDocument();
+    });
+  });
+
+  it("auto-suggests meals for unlocked days", async () => {
+    mockData.mealPlanRows = [] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Change" }).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("auto-suggests meals only for selected days", async () => {
+    mockData.mealPlanRows = [] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(14);
+    });
+
+    const selectionCheckboxes = screen.getAllByRole("checkbox", { name: /Select /i });
+    fireEvent.click(selectionCheckboxes[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest Selected" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(13);
     });
   });
 });

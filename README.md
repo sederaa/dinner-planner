@@ -27,6 +27,20 @@ source ~/.nvm/nvm.sh && nvm use 25 && cd "/Users/sebastianderaadt/Documents/Proj
 
 The app will be available at http://localhost:5173/
 
+### Supabase RLS setup
+
+If Supabase flags `RLS Disabled in Public`, run the migration in:
+
+- `supabase/migrations/20260219_enable_rls_public_tables.sql`
+
+Quickest way:
+
+1. Open Supabase Dashboard → SQL Editor.
+2. Paste the SQL from that file.
+3. Run it once.
+
+This enables RLS on the app tables (`dishes`, `meal_plans`, `rules_config`, `user_settings`) and adds explicit policies for `anon` and `authenticated` to preserve the app's current single-user behavior.
+
 ---
 
 ## Original Vite Template Information

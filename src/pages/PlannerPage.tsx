@@ -114,6 +114,8 @@ export function PlannerPage() {
   const [defaultOfficeDays, setDefaultOfficeDays] = useState<DefaultOfficeDays>(FALLBACK_DEFAULT_OFFICE_DAYS);
   const [configuredRules, setConfiguredRules] = useState<Rule[]>(DEFAULT_RULES);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [autoSuggestMessage, setAutoSuggestMessage] = useState<string | null>(null);
+  const [selectedDaysByDate, setSelectedDaysByDate] = useState<Record<string, boolean>>({});
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
@@ -143,6 +145,10 @@ export function PlannerPage() {
     return dishes.filter((dish) => dish.course.includes("main") && dish.status !== "disabled");
   }, [dishes]);
 
+  const autoSuggestableMainDishes = useMemo(() => {
+    return availableMainDishes.filter((dish) => dish.status === "enabled" && dish.type !== "leftovers" && dish.type !== "eating_out");
+  }, [availableMainDishes]);
+
   const availableSideDishes = useMemo(() => {
     return dishes.filter((dish) => dish.course.includes("side") && dish.status !== "disabled");
   }, [dishes]);
@@ -169,6 +175,9 @@ export function PlannerPage() {
   }, [availableDessertDishes]);
 
   const selectedDayKey = selectedDay ? toDateKey(selectedDay) : null;
+  const selectedDateKeys = useMemo(() => {
+    return days.map((date) => toDateKey(date)).filter((dateKey) => Boolean(selectedDaysByDate[dateKey]));
+  }, [days, selectedDaysByDate]);
   const selectedDayLabel = selectedDay
     ? new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(selectedDay)
     : "";
@@ -495,9 +504,128 @@ export function PlannerPage() {
         ...prev,
         [dateKey]: nextLockValue,
       }));
+
+      if (nextLockValue) {
+        setSelectedDaysByDate((prev) => {
+          if (!prev[dateKey]) return prev;
+          const next = { ...prev };
+          delete next[dateKey];
+          return next;
+        });
+      }
     } catch (lockError) {
       console.error("Error updating day lock:", lockError);
     }
+  };
+
+  const setAutoSuggestFeedback = (message: string) => {
+    setAutoSuggestMessage(message);
+    setTimeout(() => {
+      setAutoSuggestMessage(null);
+    }, 2500);
+  };
+
+  const chooseSuggestedMainForDate = (dateKey: string): MealOption | null => {
+    if (autoSuggestableMainDishes.length === 0) return null;
+
+    const metadata = resolvedMetadataForDateKey(dateKey);
+    const scored = autoSuggestableMainDishes
+      .map((dish) => ({
+        dish,
+        result: scoreDishForDay({
+          dish,
+          dayContext: {
+            personAOfficeNextDay: metadata.personAOfficeNextDay,
+            personBOfficeNextDay: metadata.personBOfficeNextDay,
+          },
+          rules: configuredRules,
+        }),
+      }))
+      .sort((a, b) => {
+        if (a.result.score !== b.result.score) {
+          return b.result.score - a.result.score;
+        }
+
+        return a.dish.name.localeCompare(b.dish.name);
+      });
+
+    const best = scored[0]?.dish;
+    return best ? { id: best.id, name: best.name } : null;
+  };
+
+  const autoSuggestForDateKeys = async (requestedDateKeys: string[]) => {
+    const uniqueDateKeys = Array.from(new Set(requestedDateKeys));
+    const unlockedDateKeys = uniqueDateKeys.filter((dateKey) => !lockedDaysByDate[dateKey]);
+
+    if (unlockedDateKeys.length === 0) {
+      setAutoSuggestFeedback("No unlocked days to suggest");
+      return;
+    }
+
+    if (autoSuggestableMainDishes.length === 0) {
+      setAutoSuggestFeedback("No enabled main dishes available");
+      return;
+    }
+
+    const suggestions: Record<string, DayMealAssignment> = {};
+    const operations: Promise<void>[] = [];
+
+    unlockedDateKeys.forEach((dateKey) => {
+      const suggestedMain = chooseSuggestedMainForDate(dateKey);
+      if (!suggestedMain) return;
+
+      const suggestedMeal: DayMealAssignment = {
+        special: null,
+        main: suggestedMain,
+        sides: [],
+        dessert: null,
+      };
+
+      suggestions[dateKey] = suggestedMeal;
+      operations.push(persistMealAssignment(dateKey, suggestedMeal, resolvedMetadataForDateKey(dateKey)));
+    });
+
+    if (operations.length === 0) {
+      setAutoSuggestFeedback("No suggestions generated");
+      return;
+    }
+
+    try {
+      await Promise.all(operations);
+      setAssignedMealsByDate((prev) => ({
+        ...prev,
+        ...suggestions,
+      }));
+      setAutoSuggestFeedback(`Suggested meals for ${operations.length} day${operations.length === 1 ? "" : "s"}`);
+    } catch (suggestError) {
+      console.error("Error auto-suggesting meals:", suggestError);
+      setAutoSuggestFeedback("Auto-suggest failed");
+    }
+  };
+
+  const autoSuggestAllDays = async () => {
+    await autoSuggestForDateKeys(days.map((date) => toDateKey(date)));
+  };
+
+  const autoSuggestSelectedDays = async () => {
+    await autoSuggestForDateKeys(selectedDateKeys);
+    setSelectedDaysByDate({});
+  };
+
+  const toggleDaySelection = (dateKey: string, checked: boolean) => {
+    setSelectedDaysByDate((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          [dateKey]: true,
+        };
+      }
+
+      if (!prev[dateKey]) return prev;
+      const next = { ...prev };
+      delete next[dateKey];
+      return next;
+    });
   };
 
   const persistDayMetadata = async (dateKey: string, metadata: DayMetadata) => {
@@ -900,6 +1028,12 @@ export function PlannerPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
           <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays}>
+              Auto-Suggest All
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={autoSuggestSelectedDays} disabled={selectedDateKeys.length === 0}>
+              Auto-Suggest Selected
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={exportMealPlan}>
               Export
             </Button>
@@ -913,6 +1047,7 @@ export function PlannerPage() {
         </CardHeader>
         <CardContent className="pt-0">
           {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
+          {autoSuggestMessage && <div className="mb-3 text-sm text-gray-600">{autoSuggestMessage}</div>}
           <div className="grid grid-cols-7 gap-3">
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];
@@ -921,6 +1056,7 @@ export function PlannerPage() {
               const dateKey = toDateKey(date);
               const assignedMeal = assignedMealsByDate[dateKey];
               const isLocked = Boolean(lockedDaysByDate[dateKey]);
+              const isSelected = Boolean(selectedDaysByDate[dateKey]);
               const dayMetadata = resolvedMetadataForDateKey(dateKey);
               const isDayMenuOpen = openDayMenuDateKey === dateKey;
               const dayViolations = getRuleViolationsForMeal(assignedMeal, dayMetadata);
@@ -934,6 +1070,12 @@ export function PlannerPage() {
                         <div className="text-sm font-semibold text-gray-900">{formattedDate}</div>
                       </div>
                       <div className="flex items-center gap-1">
+                        <Checkbox
+                          checked={isSelected}
+                          disabled={isLocked}
+                          onCheckedChange={(checked) => toggleDaySelection(dateKey, checked === true)}
+                          aria-label={`Select ${dayName} ${formattedDate}`}
+                        />
                         <Button
                           type="button"
                           size="sm"

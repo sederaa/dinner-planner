@@ -43,7 +43,7 @@
   - [ ] dish_cooldown_period
 - [ ] Pre-populate rules with default point values
 - [ ] Build scoring/ranking algorithm
-- [ ] Auto-suggest functionality (all days / selected days)
+- [x] Auto-suggest functionality (all days / selected days)
 - [x] Rule violation indicators
 - [ ] Swap/alternative suggestions
 - [ ] Unit tests for rules engine and auto-suggestion logic
