@@ -42,7 +42,7 @@
   - [ ] prioritize_ingredient
   - [ ] dish_cooldown_period
 - [ ] Pre-populate rules with default point values
-- [ ] Build scoring/ranking algorithm
+- [x] Build scoring/ranking algorithm
 - [x] Auto-suggest functionality (all days / selected days)
 - [x] Rule violation indicators
 - [ ] Swap/alternative suggestions

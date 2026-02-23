@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase";
 import type { Dish } from "../types/dish";
 import type { Database } from "../types/database";
 import { DEFAULT_RULES, type Rule, type RuleType } from "../types/rule";
-import { scoreDishForDay, type AppliedRuleResult } from "../utils/scoringEngine";
+import { rankDishesForDay, scoreDishForDay, type AppliedRuleResult } from "../utils/scoringEngine";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
@@ -348,7 +348,16 @@ export function PlannerPage() {
     return dishes.find((dish) => dish.id === assignment.main?.id) || null;
   };
 
-  const getRuleViolationsForMeal = (assignment: DayMealAssignment | undefined, metadata: DayMetadata): AppliedRuleResult[] => {
+  const getPreviousDishesForDateKey = (dateKey: string, assignmentOverrides: Record<string, DayMealAssignment> = {}) => {
+    return Object.keys({ ...assignedMealsByDate, ...assignmentOverrides })
+      .filter((key) => key < dateKey)
+      .sort((left, right) => right.localeCompare(left))
+      .map((key) => assignmentOverrides[key] || assignedMealsByDate[key])
+      .map((assignment) => (assignment ? mealAssignmentToDish(assignment) : null))
+      .filter((dish): dish is Dish => dish !== null);
+  };
+
+  const getRuleViolationsForMeal = (dateKey: string, assignment: DayMealAssignment | undefined, metadata: DayMetadata): AppliedRuleResult[] => {
     if (!assignment) return [];
 
     const dish = mealAssignmentToDish(assignment);
@@ -357,10 +366,12 @@ export function PlannerPage() {
     const scoringResult = scoreDishForDay({
       dish,
       dayContext: {
+        hasGuests: metadata.hasGuests,
         personAOfficeNextDay: metadata.personAOfficeNextDay,
         personBOfficeNextDay: metadata.personBOfficeNextDay,
       },
       rules: configuredRules,
+      previousDishes: getPreviousDishesForDateKey(dateKey),
     });
 
     return scoringResult.appliedRules.filter((ruleResult) => ruleResult.violated);
@@ -525,32 +536,93 @@ export function PlannerPage() {
     }, 2500);
   };
 
-  const chooseSuggestedMainForDate = (dateKey: string): MealOption | null => {
+  const chooseSuggestedMainForDate = (dateKey: string, assignmentOverrides: Record<string, DayMealAssignment> = {}): MealOption | null => {
     if (autoSuggestableMainDishes.length === 0) return null;
 
     const metadata = resolvedMetadataForDateKey(dateKey);
-    const scored = autoSuggestableMainDishes
-      .map((dish) => ({
-        dish,
-        result: scoreDishForDay({
-          dish,
-          dayContext: {
-            personAOfficeNextDay: metadata.personAOfficeNextDay,
-            personBOfficeNextDay: metadata.personBOfficeNextDay,
-          },
-          rules: configuredRules,
-        }),
-      }))
-      .sort((a, b) => {
-        if (a.result.score !== b.result.score) {
-          return b.result.score - a.result.score;
-        }
+    const ranked = rankDishesForDay({
+      dishes: autoSuggestableMainDishes,
+      dayContext: {
+        hasGuests: metadata.hasGuests,
+        personAOfficeNextDay: metadata.personAOfficeNextDay,
+        personBOfficeNextDay: metadata.personBOfficeNextDay,
+      },
+      rules: configuredRules,
+      previousDishes: getPreviousDishesForDateKey(dateKey, assignmentOverrides),
+    });
 
-        return a.dish.name.localeCompare(b.dish.name);
-      });
-
-    const best = scored[0]?.dish;
+    const best = ranked[0]?.dish;
     return best ? { id: best.id, name: best.name } : null;
+  };
+
+  const buildRuleSummary = (appliedRules: AppliedRuleResult[]) => {
+    if (appliedRules.length === 0) return "No active rule impacts";
+
+    return appliedRules
+      .map((rule) => {
+        const matchingRule = configuredRules.find((configuredRule) => configuredRule.type === rule.ruleType);
+        const ruleLabel = matchingRule?.name || rule.ruleType;
+        const deltaLabel = rule.delta > 0 ? `+${rule.delta}` : `${rule.delta}`;
+        const stateLabel = rule.violated ? "violated" : "ok";
+        return `${ruleLabel}: ${deltaLabel} (${stateLabel})`;
+      })
+      .join("\n");
+  };
+
+  const getMealDebugTitle = (dateKey: string, assignment: DayMealAssignment | undefined) => {
+    if (!assignment) return "No meal planned";
+
+    if (assignment.special?.id === "EATING_OUT") {
+      return "Special meal: Eating Out (never auto-suggested)";
+    }
+
+    if (assignment.main?.id === "LEFTOVERS") {
+      return "Special meal: Leftovers (manual-only, never auto-suggested)";
+    }
+
+    if (!assignment.main) {
+      return "No main dish selected";
+    }
+
+    const metadata = resolvedMetadataForDateKey(dateKey);
+    const previousDishes = getPreviousDishesForDateKey(dateKey);
+    const ranked = rankDishesForDay({
+      dishes: autoSuggestableMainDishes,
+      dayContext: {
+        hasGuests: metadata.hasGuests,
+        personAOfficeNextDay: metadata.personAOfficeNextDay,
+        personBOfficeNextDay: metadata.personBOfficeNextDay,
+      },
+      rules: configuredRules,
+      previousDishes,
+    });
+
+    const selected = ranked.find((entry) => entry.dish.id === assignment.main?.id);
+    if (!selected) {
+      return `${assignment.main.name}\nManual or non-auto-suggestable main dish`;
+    }
+
+    const rank = ranked.findIndex((entry) => entry.dish.id === assignment.main?.id) + 1;
+    const best = ranked[0];
+    const topAlternatives = ranked
+      .slice(0, 3)
+      .map((entry, index) => `${index + 1}. ${entry.dish.name} (${entry.score})`)
+      .join("\n");
+
+    const lines: string[] = [
+      `Suggested score debug for ${assignment.main.name}`,
+      `Score: ${selected.score}`,
+      `Rank: ${rank}/${ranked.length}`,
+      `Best candidate: ${best?.dish.name || assignment.main.name} (${best?.score ?? selected.score})`,
+      "",
+      "Rule impacts:",
+      buildRuleSummary(selected.appliedRules),
+      "",
+      "Top options:",
+      topAlternatives,
+    ];
+
+    return lines.join("\n");
   };
 
   const autoSuggestForDateKeys = async (requestedDateKeys: string[]) => {
@@ -570,8 +642,9 @@ export function PlannerPage() {
     const suggestions: Record<string, DayMealAssignment> = {};
     const operations: Promise<void>[] = [];
 
-    unlockedDateKeys.forEach((dateKey) => {
-      const suggestedMain = chooseSuggestedMainForDate(dateKey);
+    const orderedDateKeys = [...unlockedDateKeys].sort((left, right) => left.localeCompare(right));
+    orderedDateKeys.forEach((dateKey) => {
+      const suggestedMain = chooseSuggestedMainForDate(dateKey, suggestions);
       if (!suggestedMain) return;
 
       const suggestedMeal: DayMealAssignment = {
@@ -812,48 +885,90 @@ export function PlannerPage() {
     }
   };
 
-  const clearAssignedMeal = async (date: Date) => {
-    const key = toDateKey(date);
-    const isLocked = Boolean(lockedDaysByDate[key]);
-    const metadata = resolvedMetadataForDateKey(key);
-    const shouldKeepMetadataRow = hasMetadataOverride(key, metadata);
+  const clearMealForDateKey = async (dateKey: string) => {
+    const isLocked = Boolean(lockedDaysByDate[dateKey]);
+    const metadata = resolvedMetadataForDateKey(dateKey);
+    const shouldKeepMetadataRow = hasMetadataOverride(dateKey, metadata);
+
+    if (isLocked) {
+      const payload: MealPlanInsert = {
+        date: dateKey,
+        main_dish_id: null,
+        main_dish_type: null,
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: metadata.hasGuests,
+        person_a_office_next_day: metadata.personAOfficeNextDay,
+        person_b_office_next_day: metadata.personBOfficeNextDay,
+        locked: true,
+      };
+      const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
+      if (error) throw error;
+      return;
+    }
+
+    if (shouldKeepMetadataRow) {
+      const payload: MealPlanInsert = {
+        date: dateKey,
+        main_dish_id: null,
+        main_dish_type: null,
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: metadata.hasGuests,
+        person_a_office_next_day: metadata.personAOfficeNextDay,
+        person_b_office_next_day: metadata.personBOfficeNextDay,
+        locked: false,
+      };
+      const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
+      if (error) throw error;
+      return;
+    }
+
+    await deleteMealAssignment(dateKey);
+  };
+
+  const clearMealsByMode = async (mode: "all" | "non-locked") => {
+    const dateKeysInView = days.map((date) => toDateKey(date));
+    const plannedDateKeys = dateKeysInView.filter((dateKey) => hasAnyAssignedMeal(assignedMealsByDate[dateKey]));
+    const dateKeysToClear = plannedDateKeys.filter((dateKey) => mode === "all" || !lockedDaysByDate[dateKey]);
+
+    if (dateKeysToClear.length === 0) {
+      setAutoSuggestFeedback(mode === "all" ? "No planned meals to clear" : "No non-locked planned meals to clear");
+      return;
+    }
 
     try {
-      if (isLocked) {
-        const payload: MealPlanInsert = {
-          date: key,
-          main_dish_id: null,
-          main_dish_type: null,
-          side_dish_ids: [],
-          dessert_dish_id: null,
-          has_guests: metadata.hasGuests,
-          person_a_office_next_day: metadata.personAOfficeNextDay,
-          person_b_office_next_day: metadata.personBOfficeNextDay,
-          locked: true,
-        };
-        const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
-        if (error) throw error;
-      } else if (shouldKeepMetadataRow) {
-        const payload: MealPlanInsert = {
-          date: key,
-          main_dish_id: null,
-          main_dish_type: null,
-          side_dish_ids: [],
-          dessert_dish_id: null,
-          has_guests: metadata.hasGuests,
-          person_a_office_next_day: metadata.personAOfficeNextDay,
-          person_b_office_next_day: metadata.personBOfficeNextDay,
-          locked: false,
-        };
-        const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
-        if (error) throw error;
-      } else {
-        await deleteMealAssignment(key);
-      }
-
+      await Promise.all(dateKeysToClear.map((dateKey) => clearMealForDateKey(dateKey)));
       setAssignedMealsByDate((prev) => {
         const next = { ...prev };
-        delete next[key];
+        dateKeysToClear.forEach((dateKey) => {
+          delete next[dateKey];
+        });
+        return next;
+      });
+      setAutoSuggestFeedback(`Cleared meals for ${dateKeysToClear.length} day${dateKeysToClear.length === 1 ? "" : "s"}`);
+    } catch (clearError) {
+      console.error("Error clearing meals:", clearError);
+      setAutoSuggestFeedback("Clear failed");
+    }
+  };
+
+  const clearAllMeals = async () => {
+    await clearMealsByMode("all");
+  };
+
+  const clearNonLockedMeals = async () => {
+    await clearMealsByMode("non-locked");
+  };
+
+  const clearAssignedMeal = async (date: Date) => {
+    const dateKey = toDateKey(date);
+
+    try {
+      await clearMealForDateKey(dateKey);
+      setAssignedMealsByDate((prev) => {
+        const next = { ...prev };
+        delete next[dateKey];
         return next;
       });
     } catch (clearError) {
@@ -1015,7 +1130,17 @@ export function PlannerPage() {
       }
     : editingMeal;
 
-  const editingViolations = selectedDayKey ? getRuleViolationsForMeal(editingFinalMeal, editingDayMetadata) : [];
+  const editingViolations = selectedDayKey ? getRuleViolationsForMeal(selectedDayKey, editingFinalMeal, editingDayMetadata) : [];
+  const plannedMealsInViewCount = days.reduce((count, date) => {
+    const dateKey = toDateKey(date);
+    return count + (hasAnyAssignedMeal(assignedMealsByDate[dateKey]) ? 1 : 0);
+  }, 0);
+  const nonLockedPlannedMealsInViewCount = days.reduce((count, date) => {
+    const dateKey = toDateKey(date);
+    const hasMeal = hasAnyAssignedMeal(assignedMealsByDate[dateKey]);
+    const isLocked = Boolean(lockedDaysByDate[dateKey]);
+    return count + (hasMeal && !isLocked ? 1 : 0);
+  }, 0);
 
   return (
     <div>
@@ -1033,6 +1158,12 @@ export function PlannerPage() {
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={autoSuggestSelectedDays} disabled={selectedDateKeys.length === 0}>
               Auto-Suggest Selected
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={clearNonLockedMeals} disabled={nonLockedPlannedMealsInViewCount === 0}>
+              Clear
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={clearAllMeals} disabled={plannedMealsInViewCount === 0}>
+              Clear All
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={exportMealPlan}>
               Export
@@ -1059,7 +1190,8 @@ export function PlannerPage() {
               const isSelected = Boolean(selectedDaysByDate[dateKey]);
               const dayMetadata = resolvedMetadataForDateKey(dateKey);
               const isDayMenuOpen = openDayMenuDateKey === dateKey;
-              const dayViolations = getRuleViolationsForMeal(assignedMeal, dayMetadata);
+              const dayViolations = getRuleViolationsForMeal(dateKey, assignedMeal, dayMetadata);
+              const mealDebugTitle = getMealDebugTitle(dateKey, assignedMeal);
 
               return (
                 <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-yellow-300 !bg-[#FFFACD] shadow-none" : "border-gray-200 shadow-none"}>
@@ -1151,7 +1283,7 @@ export function PlannerPage() {
                       </div>
                     </div>
                     {assignedMeal ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2" title={mealDebugTitle}>
                         {assignedMeal.special ? (
                           <div className="text-sm text-gray-900 font-medium">Special: {assignedMeal.special.name}</div>
                         ) : (

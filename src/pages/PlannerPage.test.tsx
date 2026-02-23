@@ -220,4 +220,122 @@ describe("PlannerPage", () => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(13);
     });
   });
+
+  it("clears only non-locked planned meals with Clear", async () => {
+    const today = new Date();
+    const monday = new Date(today);
+    const daysFromMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysFromMonday);
+
+    const mondayKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+    const tuesday = new Date(monday);
+    tuesday.setDate(tuesday.getDate() + 1);
+    const tuesdayKey = `${tuesday.getFullYear()}-${String(tuesday.getMonth() + 1).padStart(2, "0")}-${String(tuesday.getDate()).padStart(2, "0")}`;
+
+    mockData.mealPlanRows = [
+      {
+        id: "clear-unlocked",
+        date: mondayKey,
+        main_dish_id: "dish-1",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: false,
+        person_b_office_next_day: false,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: "clear-locked",
+        date: tuesdayKey,
+        main_dish_id: "dish-1",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: false,
+        person_b_office_next_day: false,
+        locked: true,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Change" }).length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Change" }).length).toBe(1);
+    });
+  });
+
+  it("clears all planned meals with Clear All", async () => {
+    const today = new Date();
+    const monday = new Date(today);
+    const daysFromMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysFromMonday);
+
+    const mondayKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+    const tuesday = new Date(monday);
+    tuesday.setDate(tuesday.getDate() + 1);
+    const tuesdayKey = `${tuesday.getFullYear()}-${String(tuesday.getMonth() + 1).padStart(2, "0")}-${String(tuesday.getDate()).padStart(2, "0")}`;
+
+    mockData.mealPlanRows = [
+      {
+        id: "clear-all-1",
+        date: mondayKey,
+        main_dish_id: "dish-1",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: false,
+        person_b_office_next_day: false,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: "clear-all-2",
+        date: tuesdayKey,
+        main_dish_id: "dish-1",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: false,
+        person_b_office_next_day: false,
+        locked: true,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Change" }).length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear All" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Change" })).not.toBeInTheDocument();
+    });
+  });
 });
