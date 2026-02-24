@@ -46,6 +46,17 @@ Notes:
 - `npm test` runs `vitest` (watch mode)
 - `npm run test:run` runs `vitest run` (non-watch, exits automatically)
 
+### Validation After Major Changes
+
+After every major change (for example, after completing a TODO item), run both:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run build
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run
+```
+
+Fix any build or test failures before marking the work as complete.
+
 ### Supabase RLS setup
 
 If Supabase flags `RLS Disabled in Public`, run the migration in:

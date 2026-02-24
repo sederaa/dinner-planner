@@ -79,3 +79,4 @@
 - App is intentionally simple: no authentication, straightforward CRUD operations
 - Single-user app (developer authenticates to Supabase)
 - Focus on rules engine and auto-suggestion as core differentiators
+- After implementing every TODO item (or any other major change), run `npm run build` and `npm run test:run`, and resolve any build/test errors before marking the item done
