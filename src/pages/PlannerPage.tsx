@@ -49,6 +49,8 @@ const FALLBACK_DEFAULT_OFFICE_DAYS: DefaultOfficeDays = {
   personB: ["monday", "tuesday", "wednesday", "thursday"],
 };
 
+const FALLBACK_PLANNING_HORIZON_DAYS = 14;
+
 const startOfMonday = (date: Date) => {
   const monday = new Date(date);
   const day = monday.getDay();
@@ -112,6 +114,7 @@ export function PlannerPage() {
   const [openDayMenuDateKey, setOpenDayMenuDateKey] = useState<string | null>(null);
   const openDayMenuContainerRef = useRef<HTMLDivElement | null>(null);
   const [defaultOfficeDays, setDefaultOfficeDays] = useState<DefaultOfficeDays>(FALLBACK_DEFAULT_OFFICE_DAYS);
+  const [planningHorizonDays, setPlanningHorizonDays] = useState<number>(FALLBACK_PLANNING_HORIZON_DAYS);
   const [configuredRules, setConfiguredRules] = useState<Rule[]>(DEFAULT_RULES);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [autoSuggestMessage, setAutoSuggestMessage] = useState<string | null>(null);
@@ -137,13 +140,13 @@ export function PlannerPage() {
   });
 
   const days = useMemo(() => {
-    return Array.from({ length: 14 }, (_, index) => addDays(calendarStart, index));
-  }, [calendarStart]);
+    return Array.from({ length: planningHorizonDays }, (_, index) => addDays(calendarStart, index));
+  }, [calendarStart, planningHorizonDays]);
 
   const rangeLabel = useMemo(() => {
-    const rangeEnd = addDays(calendarStart, 13);
+    const rangeEnd = addDays(calendarStart, planningHorizonDays - 1);
     return formatRangeLabel(calendarStart, rangeEnd);
-  }, [calendarStart]);
+  }, [calendarStart, planningHorizonDays]);
 
   const goToPreviousWeek = () => setCalendarStart((current) => addDays(current, -7));
   const goToNextWeek = () => setCalendarStart((current) => addDays(current, 7));
@@ -402,7 +405,7 @@ export function PlannerPage() {
 
       try {
         const [{ data: settingsData, error: settingsError }, { data, error }, rulesData] = await Promise.all([
-          (supabase as any).from("user_settings").select("default_office_days").limit(1).maybeSingle(),
+          (supabase as any).from("user_settings").select("planning_horizon_days, default_office_days").limit(1).maybeSingle(),
           (supabase as any).from("meal_plans").select("*"),
           ensureRulesConfigSeeded(),
         ]);
@@ -410,6 +413,8 @@ export function PlannerPage() {
         if (settingsError) throw settingsError;
         if (error) throw error;
 
+        const horizonDays = Number(settingsData?.planning_horizon_days);
+        setPlanningHorizonDays(horizonDays === 7 ? 7 : FALLBACK_PLANNING_HORIZON_DAYS);
         setDefaultOfficeDays(normalizeOfficeDays(settingsData?.default_office_days));
 
         if (rulesData) {
@@ -1140,15 +1145,6 @@ export function PlannerPage() {
       setExportMessage(null);
     }, 2000);
   };
-
-  const editingFinalMeal: DayMealAssignment = editingMeal.special
-    ? {
-        special: editingMeal.special,
-        main: null,
-        sides: [],
-        dessert: null,
-      }
-    : editingMeal;
 
   const rankedMainCandidatesForSelectedDay = selectedDayKey ? getRankedMainCandidatesForDate(selectedDayKey) : [];
   const rankedMainCandidatesById = new Map(rankedMainCandidatesForSelectedDay.map((entry) => [entry.dish.id, entry]));

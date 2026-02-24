@@ -23,6 +23,13 @@ const mockData = vi.hoisted(() => {
   const dateKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
 
   return {
+    userSettings: {
+      planning_horizon_days: 14,
+      default_office_days: {
+        personA: ["monday", "tuesday", "wednesday", "thursday"],
+        personB: ["monday", "tuesday", "wednesday", "thursday"],
+      },
+    },
     dishes: [
       {
         id: "dish-1",
@@ -89,12 +96,7 @@ vi.mock("../lib/supabase", () => ({
           select: () => ({
             limit: () => ({
               maybeSingle: async () => ({
-                data: {
-                  default_office_days: {
-                    personA: ["monday", "tuesday", "wednesday", "thursday"],
-                    personB: ["monday", "tuesday", "wednesday", "thursday"],
-                  },
-                },
+                data: mockData.userSettings,
                 error: null,
               }),
             }),
@@ -140,6 +142,14 @@ vi.mock("../lib/supabase", () => ({
 
 describe("PlannerPage", () => {
   beforeEach(() => {
+    mockData.userSettings = {
+      planning_horizon_days: 14,
+      default_office_days: {
+        personA: ["monday", "tuesday", "wednesday", "thursday"],
+        personB: ["monday", "tuesday", "wednesday", "thursday"],
+      },
+    };
+
     const dateKey = getMondayDateKey();
     mockData.dishes = [
       {
@@ -304,6 +314,20 @@ describe("PlannerPage", () => {
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(13);
+    });
+  });
+
+  it("renders 7 days when planning horizon is set to 7", async () => {
+    mockData.userSettings = {
+      ...mockData.userSettings,
+      planning_horizon_days: 7,
+    };
+    mockData.mealPlanRows = [] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(7);
     });
   });
 

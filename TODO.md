@@ -52,7 +52,7 @@
 ## Phase 5: Polish & History (Day 7)
 
 - [x] Loading states & error handling
-- [ ] User settings management
+- [x] User settings management
 - [ ] Session-based filter persistence
 - [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
 - [ ] Design refactor
@@ -70,7 +70,7 @@
 
 **Phase:** 5 - Polish & History  
 **Last Updated:** 25 February 2026  
-**Next Task:** User settings management
+**Next Task:** Session-based filter persistence
 
 ---
 
