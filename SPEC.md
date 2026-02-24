@@ -140,12 +140,6 @@ type Rule = {
 - Highlight rule violations with explanations
 - Alternatives are surfaced inline in **Edit Meal** ranked mains (no separate Swap action/button)
 
-### 5. Historical View
-
-- View past meal plans (read-only)
-- Navigate through previous weeks
-- See what was actually planned/cooked
-- Useful for avoiding recent repeats and getting ideas
 
 ### 6. Export Functionality
 
@@ -215,7 +209,7 @@ type Rule = {
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Dinner Planner    [Dishes] [Rules] [History]    │
+│  Dinner Planner    [Dishes] [Rules]              │
 ├──────────────────────────────────────────────────┤
 │  Week of Feb 10-16, 2026      [◄] [►] [Export]  │
 │  [Auto-Suggest All] [Auto-Suggest Selected]      │
@@ -321,11 +315,6 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Drag "Leftovers" or "Eating Out" special dishes onto days
    - Filter by type (main/side/dessert), protein, time, spicy (yes/no)
    - Filters and search terms persist for the session (reset on app reload)
-
-5. **Viewing history:**
-   - Go to History view
-   - Navigate through past weeks (read-only)
-   - See what was planned previously
 
 ## Rules Engine Logic
 
@@ -479,7 +468,6 @@ Since you're using Supabase cloud, you can create these tables directly in the S
 
 ### Phase 5: Polish & History (Day 7)
 
-- [ ] Historical view for past meal plans
 - [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
 - [ ] Loading states & error handling
 - [ ] User settings management
@@ -536,7 +524,6 @@ Based on user feedback:
 
 - **Family composition**: 2 adults (Person A & B) + kids (kids not separately tracked)
 - **Portion sizes**: Always assumed sufficient for leftovers - no tracking needed
-- **Historical data**: Yes, include read-only view of past meal plans
 - **Dietary restrictions**: None at this time
 - **Meal types**: Dinner only (lunch/breakfast out of scope)
 - **Dish entry**: Manual entry only (no URL import needed)

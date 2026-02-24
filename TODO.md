@@ -51,11 +51,12 @@
 
 ## Phase 5: Polish & History (Day 7)
 
-- [ ] Historical view for past meal plans
-- [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
+- [x] Historical view for past meal plans
 - [ ] Loading states & error handling
 - [ ] User settings management
 - [ ] Session-based filter persistence
+- [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
+- [ ] Design refactor
 
 ## Phase 6: Docker & Deploy (Day 8)
 
@@ -68,9 +69,9 @@
 
 ## Current Status
 
-**Phase:** 4 - Rules & Auto-Suggest  
-**Last Updated:** 18 February 2026  
-**Next Task:** Historical view for past meal plans
+**Phase:** 5 - Polish & History  
+**Last Updated:** 25 February 2026  
+**Next Task:** Loading states & error handling
 
 ---
 
