@@ -91,6 +91,14 @@ const formatRangeLabel = (start: Date, end: Date) => {
   return `${fullStart} - ${fullEnd}`;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 export function PlannerPage() {
   const { dishes, loading: dishesLoading } = useDishes();
   const [calendarStart, setCalendarStart] = useState<Date>(() => startOfMonday(new Date()));
@@ -116,6 +124,11 @@ export function PlannerPage() {
     personBOfficeNextDay: true,
   });
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
+  const [plannerLoading, setPlannerLoading] = useState(true);
+  const [plannerError, setPlannerError] = useState<string | null>(null);
+  const [plannerActionError, setPlannerActionError] = useState<string | null>(null);
+  const [plannerLoadVersion, setPlannerLoadVersion] = useState(0);
+  const [busyAction, setBusyAction] = useState<null | "lock" | "meal" | "day" | "suggest" | "clear" | "export">(null);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
     main: null,
@@ -384,6 +397,9 @@ export function PlannerPage() {
     if (dishesLoading || mealPlansLoaded) return;
 
     const loadMealPlans = async () => {
+      setPlannerLoading(true);
+      setPlannerError(null);
+
       try {
         const [{ data: settingsData, error: settingsError }, { data, error }, rulesData] = await Promise.all([
           (supabase as any).from("user_settings").select("default_office_days").limit(1).maybeSingle(),
@@ -419,14 +435,22 @@ export function PlannerPage() {
         setAssignedMealsByDate(nextAssignments);
         setLockedDaysByDate(nextLockedDays);
         setDayMetadataByDate(nextDayMetadata);
-        setMealPlansLoaded(true);
       } catch (loadError) {
         console.error("Error loading meal plans:", loadError);
+        setPlannerError(getErrorMessage(loadError, "Failed to load planner data. Please try again."));
+      } finally {
+        setMealPlansLoaded(true);
+        setPlannerLoading(false);
       }
     };
 
     loadMealPlans();
-  }, [dishesLoading, mealPlansLoaded, dishes]);
+  }, [dishesLoading, mealPlansLoaded, plannerLoadVersion]);
+
+  const retryPlannerLoad = () => {
+    setMealPlansLoaded(false);
+    setPlannerLoadVersion((current) => current + 1);
+  };
 
   useEffect(() => {
     if (!openDayMenuDateKey) return;
@@ -506,6 +530,8 @@ export function PlannerPage() {
   const toggleDayLock = async (date: Date) => {
     const dateKey = toDateKey(date);
     const nextLockValue = !Boolean(lockedDaysByDate[dateKey]);
+    setBusyAction("lock");
+    setPlannerActionError(null);
 
     try {
       await persistDayLock(dateKey, nextLockValue);
@@ -524,6 +550,9 @@ export function PlannerPage() {
       }
     } catch (lockError) {
       console.error("Error updating day lock:", lockError);
+      setPlannerActionError(getErrorMessage(lockError, "Failed to update day lock."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -640,6 +669,8 @@ export function PlannerPage() {
 
   const saveDayMetadataFromEditor = async () => {
     if (!dayEditorDateKey) return;
+    setBusyAction("day");
+    setPlannerActionError(null);
 
     try {
       await persistDayMetadata(dayEditorDateKey, editingDayMetadata);
@@ -659,6 +690,9 @@ export function PlannerPage() {
       setDayEditorOpen(false);
     } catch (metadataError) {
       console.error("Error saving day details:", metadataError);
+      setPlannerActionError(getErrorMessage(metadataError, "Failed to save day details."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -700,6 +734,9 @@ export function PlannerPage() {
       return;
     }
 
+    setBusyAction("suggest");
+    setPlannerActionError(null);
+
     try {
       await Promise.all(operations);
       setAssignedMealsByDate((prev) => ({
@@ -710,6 +747,9 @@ export function PlannerPage() {
     } catch (suggestError) {
       console.error("Error auto-suggesting meals:", suggestError);
       setAutoSuggestFeedback("Auto-suggest failed");
+      setPlannerActionError(getErrorMessage(suggestError, "Failed to auto-suggest meals."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -804,6 +844,8 @@ export function PlannerPage() {
     const metadata = resolvedMetadataForDateKey(selectedDayKey);
     const shouldKeepMetadataRow = hasMetadataOverride(selectedDayKey, metadata);
     const isLocked = Boolean(lockedDaysByDate[selectedDayKey]);
+    setBusyAction("meal");
+    setPlannerActionError(null);
 
     try {
       if (hasAny) {
@@ -841,6 +883,9 @@ export function PlannerPage() {
       setMealEditorOpen(false);
     } catch (saveError) {
       console.error("Error saving meal assignment:", saveError);
+      setPlannerActionError(getErrorMessage(saveError, "Failed to save meal assignment."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -896,6 +941,9 @@ export function PlannerPage() {
       return;
     }
 
+    setBusyAction("clear");
+    setPlannerActionError(null);
+
     try {
       await Promise.all(dateKeysToClear.map((dateKey) => clearMealForDateKey(dateKey)));
       setAssignedMealsByDate((prev) => {
@@ -909,6 +957,9 @@ export function PlannerPage() {
     } catch (clearError) {
       console.error("Error clearing meals:", clearError);
       setAutoSuggestFeedback("Clear failed");
+      setPlannerActionError(getErrorMessage(clearError, "Failed to clear meals."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -922,6 +973,8 @@ export function PlannerPage() {
 
   const clearAssignedMeal = async (date: Date) => {
     const dateKey = toDateKey(date);
+    setBusyAction("clear");
+    setPlannerActionError(null);
 
     try {
       await clearMealForDateKey(dateKey);
@@ -932,6 +985,9 @@ export function PlannerPage() {
       });
     } catch (clearError) {
       console.error("Error clearing meal assignment:", clearError);
+      setPlannerActionError(getErrorMessage(clearError, "Failed to clear meal assignment."));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -1066,6 +1122,8 @@ export function PlannerPage() {
 
   const exportMealPlan = async () => {
     const exportText = buildExportText();
+    setBusyAction("export");
+    setPlannerActionError(null);
 
     try {
       await copyTextToClipboard(exportText);
@@ -1073,6 +1131,9 @@ export function PlannerPage() {
     } catch (exportError) {
       console.error("Error exporting meal plan:", exportError);
       setExportMessage("Copy failed");
+      setPlannerActionError(getErrorMessage(exportError, "Failed to copy meal plan to clipboard."));
+    } finally {
+      setBusyAction(null);
     }
 
     setTimeout(() => {
@@ -1101,6 +1162,7 @@ export function PlannerPage() {
     const isLocked = Boolean(lockedDaysByDate[dateKey]);
     return count + (hasMeal && !isLocked ? 1 : 0);
   }, 0);
+  const isBusy = busyAction !== null;
 
   return (
     <div>
@@ -1113,33 +1175,57 @@ export function PlannerPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays}>
+            <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays} disabled={plannerLoading || isBusy}>
               Auto-Suggest All
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={autoSuggestSelectedDays} disabled={selectedDateKeys.length === 0}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={autoSuggestSelectedDays}
+              disabled={plannerLoading || isBusy || selectedDateKeys.length === 0}
+            >
               Auto-Suggest Selected
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={clearNonLockedMeals} disabled={nonLockedPlannedMealsInViewCount === 0}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearNonLockedMeals}
+              disabled={plannerLoading || isBusy || nonLockedPlannedMealsInViewCount === 0}
+            >
               Clear
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={clearAllMeals} disabled={plannedMealsInViewCount === 0}>
+            <Button type="button" variant="outline" size="sm" onClick={clearAllMeals} disabled={plannerLoading || isBusy || plannedMealsInViewCount === 0}>
               Clear All
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={exportMealPlan}>
+            <Button type="button" variant="outline" size="sm" onClick={exportMealPlan} disabled={plannerLoading || isBusy}>
               Export
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={goToPreviousWeek}>
+            <Button type="button" variant="outline" size="sm" onClick={goToPreviousWeek} disabled={plannerLoading || isBusy}>
               ◀
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={goToNextWeek}>
+            <Button type="button" variant="outline" size="sm" onClick={goToNextWeek} disabled={plannerLoading || isBusy}>
               ▶
             </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
-          {autoSuggestMessage && <div className="mb-3 text-sm text-gray-600">{autoSuggestMessage}</div>}
-          <div className="grid grid-cols-7 gap-3">
+          {plannerLoading ? (
+            <div className="py-6 text-sm text-gray-500">Loading planner data...</div>
+          ) : plannerError ? (
+            <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div>{plannerError}</div>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={retryPlannerLoad}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <>
+              {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
+              {autoSuggestMessage && <div className="mb-3 text-sm text-gray-600">{autoSuggestMessage}</div>}
+              {plannerActionError && <div className="mb-3 text-sm text-red-700">{plannerActionError}</div>}
+              <div className="grid grid-cols-7 gap-3">
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];
               const formattedDate = new Intl.DateTimeFormat(DATE_LOCALE, { day: "numeric", month: "short" }).format(date);
@@ -1164,7 +1250,7 @@ export function PlannerPage() {
                       <div className="flex items-center gap-1">
                         <Checkbox
                           checked={isSelected}
-                          disabled={isLocked}
+                          disabled={isLocked || plannerLoading || isBusy}
                           onCheckedChange={(checked) => toggleDaySelection(dateKey, checked === true)}
                           aria-label={`Select ${dayName} ${formattedDate}`}
                         />
@@ -1173,6 +1259,7 @@ export function PlannerPage() {
                           size="sm"
                           variant={isLocked ? "default" : "outline"}
                           className="h-6 px-2 text-xs"
+                          disabled={plannerLoading || isBusy}
                           onClick={() => toggleDayLock(date)}
                           aria-label={isLocked ? `Unlock ${dayName} ${formattedDate}` : `Lock ${dayName} ${formattedDate}`}
                           title="Locks this day for auto-suggest only. Manual changes are still allowed."
@@ -1186,6 +1273,7 @@ export function PlannerPage() {
                             size="sm"
                             variant="outline"
                             className="h-6 w-6 p-0 text-xs"
+                            disabled={plannerLoading || isBusy}
                             onClick={() => setOpenDayMenuDateKey((current) => (current === dateKey ? null : dateKey))}
                             aria-label={`Open actions for ${dayName} ${formattedDate}`}
                             title="Day actions"
@@ -1198,6 +1286,7 @@ export function PlannerPage() {
                               <button
                                 type="button"
                                 className="w-full rounded px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
+                                disabled={isBusy}
                                 onClick={() => openDayEditorForDate(date)}
                               >
                                 Edit day details
@@ -1206,7 +1295,7 @@ export function PlannerPage() {
                               <button
                                 type="button"
                                 className="w-full rounded px-2 py-1 text-left text-xs text-red-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                                disabled={!assignedMeal}
+                                disabled={!assignedMeal || isBusy}
                                 onClick={async () => {
                                   await clearAssignedMeal(date);
                                   setOpenDayMenuDateKey(null);
@@ -1231,7 +1320,14 @@ export function PlannerPage() {
                           </>
                         )}
                         <div className="flex gap-2">
-                          <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openMealEditorForDate(date)}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={plannerLoading || isBusy}
+                            onClick={() => openMealEditorForDate(date)}
+                          >
                             Change
                           </Button>
                         </div>
@@ -1249,7 +1345,14 @@ export function PlannerPage() {
                     ) : (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-400">No meal planned</div>
-                        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openMealEditorForDate(date)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          disabled={plannerLoading || isBusy}
+                          onClick={() => openMealEditorForDate(date)}
+                        >
                           + Add meal
                         </Button>
                         {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
@@ -1265,7 +1368,9 @@ export function PlannerPage() {
                 </Card>
               );
             })}
-          </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -1380,11 +1485,11 @@ export function PlannerPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)} disabled={busyAction === "meal"}>
                     Cancel
                   </Button>
-                  <Button type="button" onClick={saveMealAssignment}>
-                    Save meal
+                  <Button type="button" onClick={saveMealAssignment} disabled={busyAction === "meal"}>
+                    {busyAction === "meal" ? "Saving..." : "Save meal"}
                   </Button>
                 </div>
               </>
@@ -1428,11 +1533,11 @@ export function PlannerPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="outline" onClick={() => setDayEditorOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setDayEditorOpen(false)} disabled={busyAction === "day"}>
                 Cancel
               </Button>
-              <Button type="button" onClick={saveDayMetadataFromEditor}>
-                Save day
+              <Button type="button" onClick={saveDayMetadataFromEditor} disabled={busyAction === "day"}>
+                {busyAction === "day" ? "Saving..." : "Save day"}
               </Button>
             </div>
           </div>

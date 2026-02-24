@@ -49,33 +49,46 @@ const mergeRuleWithRow = (baseRule: EditableRule, row: RuleConfigRow | undefined
   };
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 export function RulesPage() {
   const [rules, setRules] = useState<EditableRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadRules = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const rowsData = await ensureRulesConfigSeeded();
+
+      const rows = ((rowsData as RuleConfigRow[]) || []).reduce<Record<RuleType, RuleConfigRow>>((acc, row) => {
+        if (!acc[row.rule_type]) {
+          acc[row.rule_type] = row;
+        }
+        return acc;
+      }, {} as Record<RuleType, RuleConfigRow>);
+
+      setRules(defaultEditableRules.map((rule) => mergeRuleWithRow(rule, rows[rule.type])));
+    } catch (loadError) {
+      console.error("Error loading rules:", loadError);
+      setRules(defaultEditableRules);
+      setErrorMessage(getErrorMessage(loadError, "Failed to load rules. Showing defaults."));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadRules = async () => {
-      try {
-        const rowsData = await ensureRulesConfigSeeded();
-
-        const rows = ((rowsData as RuleConfigRow[]) || []).reduce<Record<RuleType, RuleConfigRow>>((acc, row) => {
-          if (!acc[row.rule_type]) {
-            acc[row.rule_type] = row;
-          }
-          return acc;
-        }, {} as Record<RuleType, RuleConfigRow>);
-
-        setRules(defaultEditableRules.map((rule) => mergeRuleWithRow(rule, rows[rule.type])));
-      } catch (loadError) {
-        console.error("Error loading rules:", loadError);
-        setRules(defaultEditableRules);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadRules();
   }, []);
 
@@ -86,6 +99,7 @@ export function RulesPage() {
   const saveRules = async () => {
     setSaving(true);
     setSaveMessage(null);
+    setErrorMessage(null);
 
     try {
       const savedRules: EditableRule[] = [];
@@ -114,7 +128,7 @@ export function RulesPage() {
       setSaveMessage("Rules saved");
     } catch (saveError) {
       console.error("Error saving rules:", saveError);
-      setSaveMessage("Save failed");
+      setErrorMessage(getErrorMessage(saveError, "Failed to save rules."));
     } finally {
       setSaving(false);
       setTimeout(() => setSaveMessage(null), 2000);
@@ -131,12 +145,20 @@ export function RulesPage() {
       <Card className="border-gray-100 shadow-lg">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Rules</CardTitle>
-          <Button type="button" size="sm" onClick={saveRules} disabled={loading || saving}>
+          <div className="flex items-center gap-2">
+            {errorMessage && loading && (
+              <Button type="button" size="sm" variant="outline" onClick={loadRules}>
+                Retry
+              </Button>
+            )}
+            <Button type="button" size="sm" onClick={saveRules} disabled={loading || saving}>
             {saving ? "Saving..." : "Save"}
-          </Button>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {saveMessage && <div className="text-sm text-gray-600">{saveMessage}</div>}
+          {errorMessage && <div className="text-sm text-red-700">{errorMessage}</div>}
 
           {loading ? (
             <div className="text-sm text-gray-500 py-4">Loading rules...</div>
