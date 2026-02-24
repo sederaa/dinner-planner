@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDishes } from "../hooks/useDishes";
 import { DishList } from "../components/DishList";
 import { DishFormDialog } from "../components/DishFormDialog";
@@ -6,6 +6,63 @@ import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import type { Dish, DishFormData, CourseType, DishStatus, DishTime } from "../types/dish";
+
+const DISHES_FILTERS_SESSION_KEY = "dinner-planner:dishes-filters";
+const ALLOWED_COURSES: CourseType[] = ["main", "side", "dessert"];
+const ALLOWED_TIMES: Array<DishTime | "all"> = ["all", "low", "medium", "high"];
+const ALLOWED_STATUSES: Array<DishStatus | "all"> = ["all", "enabled", "manual_only", "disabled"];
+
+type PersistedDishesFilters = {
+  selectedCourses: CourseType[];
+  selectedProteins: string[];
+  selectedTime: DishTime | "all";
+  selectedStatus: DishStatus | "all";
+  spicyOnly: boolean;
+};
+
+const DEFAULT_FILTERS: PersistedDishesFilters = {
+  selectedCourses: [],
+  selectedProteins: [],
+  selectedTime: "all",
+  selectedStatus: "all",
+  spicyOnly: false,
+};
+
+const loadPersistedFilters = (): PersistedDishesFilters => {
+  if (typeof window === "undefined") {
+    return DEFAULT_FILTERS;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(DISHES_FILTERS_SESSION_KEY);
+    if (!raw) {
+      return DEFAULT_FILTERS;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PersistedDishesFilters>;
+
+    const selectedCourses = Array.isArray(parsed.selectedCourses)
+      ? parsed.selectedCourses.filter((value): value is CourseType => ALLOWED_COURSES.includes(value as CourseType))
+      : [];
+
+    const selectedProteins = Array.isArray(parsed.selectedProteins)
+      ? parsed.selectedProteins.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      : [];
+
+    const selectedTime = ALLOWED_TIMES.includes(parsed.selectedTime as DishTime | "all") ? (parsed.selectedTime as DishTime | "all") : "all";
+    const selectedStatus = ALLOWED_STATUSES.includes(parsed.selectedStatus as DishStatus | "all") ? (parsed.selectedStatus as DishStatus | "all") : "all";
+
+    return {
+      selectedCourses,
+      selectedProteins,
+      selectedTime,
+      selectedStatus,
+      spicyOnly: parsed.spicyOnly === true,
+    };
+  } catch {
+    return DEFAULT_FILTERS;
+  }
+};
 
 export function DishesPage() {
   const { dishes, loading, error, addDish, updateDish, deleteDish } = useDishes();
@@ -37,17 +94,42 @@ export function DishesPage() {
   };
 
   // Filters state
-  const [selectedCourses, setSelectedCourses] = useState<CourseType[]>([]);
-  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
-  const [selectedTime, setSelectedTime] = useState<DishTime | "all">("all");
-  const [selectedStatus, setSelectedStatus] = useState<DishStatus | "all">("all");
-  const [spicyOnly, setSpicyOnly] = useState(false);
+  const initialFilters = useMemo(() => loadPersistedFilters(), []);
+  const [selectedCourses, setSelectedCourses] = useState<CourseType[]>(initialFilters.selectedCourses);
+  const [selectedProteins, setSelectedProteins] = useState<string[]>(initialFilters.selectedProteins);
+  const [selectedTime, setSelectedTime] = useState<DishTime | "all">(initialFilters.selectedTime);
+  const [selectedStatus, setSelectedStatus] = useState<DishStatus | "all">(initialFilters.selectedStatus);
+  const [spicyOnly, setSpicyOnly] = useState(initialFilters.spicyOnly);
 
   const allProteins = useMemo(() => {
     const set = new Set<string>();
     dishes.forEach((d) => d.proteins?.forEach((p) => p && set.add(p)));
     return Array.from(set).sort();
   }, [dishes]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    setSelectedProteins((current) => current.filter((protein) => allProteins.includes(protein)));
+  }, [allProteins, loading]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const payload: PersistedDishesFilters = {
+      selectedCourses,
+      selectedProteins,
+      selectedTime,
+      selectedStatus,
+      spicyOnly,
+    };
+
+    window.sessionStorage.setItem(DISHES_FILTERS_SESSION_KEY, JSON.stringify(payload));
+  }, [selectedCourses, selectedProteins, selectedTime, selectedStatus, spicyOnly]);
 
   const toggleCourse = (course: CourseType) => {
     setSelectedCourses((prev) => (prev.includes(course) ? prev.filter((value) => value !== course) : [...prev, course]));
