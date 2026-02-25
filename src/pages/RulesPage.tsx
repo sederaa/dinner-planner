@@ -143,9 +143,9 @@ export function RulesPage() {
       </div>
 
       <Card className="border-gray-100 shadow-lg">
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle className="text-lg">Rules</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {errorMessage && loading && (
               <Button type="button" size="sm" variant="outline" onClick={loadRules}>
                 Retry
@@ -165,7 +165,7 @@ export function RulesPage() {
           ) : (
             rules.map((rule) => (
               <div key={rule.type} className="rounded-md border border-gray-200 p-3 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-900">
                     <Checkbox
                       checked={rule.enabled}
@@ -179,7 +179,7 @@ export function RulesPage() {
                     {rule.name}
                   </label>
 
-                  <div className="w-28">
+                  <div className="w-full sm:w-28">
                     <Input
                       type="number"
                       value={String(rule.points)}
@@ -196,7 +196,7 @@ export function RulesPage() {
                 </div>
 
                 {rule.type === "no_consecutive_same_protein" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="text-sm text-gray-600">Max consecutive days:</div>
                     <Input
                       type="number"
@@ -217,7 +217,7 @@ export function RulesPage() {
                 )}
 
                 {rule.type === "prioritize_ingredient" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="text-sm text-gray-600">Ingredient:</div>
                     <Input
                       type="text"
@@ -238,7 +238,7 @@ export function RulesPage() {
                 )}
 
                 {rule.type === "dish_cooldown_period" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="text-sm text-gray-600">Cooldown days:</div>
                     <Input
                       type="number"

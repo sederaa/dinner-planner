@@ -128,9 +128,9 @@ export function SettingsPage() {
       </div>
 
       <Card className="border-gray-100 shadow-lg">
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle className="text-lg">User Settings</CardTitle>
-          <Button type="button" size="sm" onClick={saveSettings} disabled={loading || saving}>
+          <Button type="button" size="sm" onClick={saveSettings} disabled={loading || saving} className="w-full sm:w-auto">
             {saving ? "Saving..." : "Save"}
           </Button>
         </CardHeader>
@@ -160,7 +160,7 @@ export function SettingsPage() {
 
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600">Person A</div>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {WEEKDAY_OPTIONS.map((day) => (
                       <label key={`person-a-${day.key}`} className="inline-flex items-center gap-2 text-sm">
                         <Checkbox checked={personAOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("A", day.key)} />
@@ -172,7 +172,7 @@ export function SettingsPage() {
 
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600">Person B</div>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {WEEKDAY_OPTIONS.map((day) => (
                       <label key={`person-b-${day.key}`} className="inline-flex items-center gap-2 text-sm">
                         <Checkbox checked={personBOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("B", day.key)} />

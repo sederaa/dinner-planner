@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Dish, DishStatus } from "../types/dish";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -9,6 +10,24 @@ interface DishListProps {
 }
 
 export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobileLayout(mediaQuery.matches);
+
+    update();
+    mediaQuery.addEventListener("change", update);
+
+    return () => {
+      mediaQuery.removeEventListener("change", update);
+    };
+  }, []);
+
   if (dishes.length === 0) {
     return (
       <Card className="rounded-lg border-gray-200">
@@ -53,6 +72,45 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
 
   return (
     <Card className="rounded-lg border-gray-200 overflow-hidden">
+      {isMobileLayout ? (
+      <div className="divide-y divide-gray-200">
+        {dishes.map((dish) => (
+          <div key={dish.id} className="p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium text-gray-900">{dish.name}</div>
+                {dish.isSpicy && <span className="text-xs text-red-600">🌶️ Spicy</span>}
+              </div>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>
+                {getStatusLabel(dish.status)}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {dish.course.map((course) => (
+                <span key={course} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  {course}
+                </span>
+              ))}
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTimeBadge(dish.time)}`}>{dish.time}</span>
+            </div>
+
+            <div className="text-xs text-gray-700">
+              <span className="font-medium">Proteins:</span> {dish.proteins && dish.proteins.length > 0 ? dish.proteins.join(", ") : "—"}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button variant="link" className="h-auto p-0 text-blue-600 hover:text-blue-900" onClick={() => onEdit(dish)}>
+                Edit
+              </Button>
+              <Button variant="link" className="h-auto p-0 text-red-600 hover:text-red-900" onClick={() => onDelete(dish)}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -107,6 +165,7 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
           </tbody>
         </table>
       </div>
+      )}
     </Card>
   );
 }

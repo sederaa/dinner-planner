@@ -163,12 +163,12 @@ export function DishesPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">🍽️ Dishes</h2>
           <p className="text-gray-600">Manage your dish database</p>
         </div>
-        <Button onClick={handleAddClick} size="lg">
+        <Button onClick={handleAddClick} size="lg" className="w-full sm:w-auto">
           + Add Dish
         </Button>
       </div>
@@ -187,7 +187,7 @@ export function DishesPage() {
 
       {!loading && !error && (
         <div>
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3">
             <div className="flex flex-wrap gap-2 items-center">
               <div className="text-sm font-medium text-gray-700 mr-2">Course:</div>
               <label className="inline-flex items-center text-sm gap-2">
@@ -204,8 +204,8 @@ export function DishesPage() {
               </label>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Proteins:</div>
                 <div className="flex gap-2 flex-wrap">
                   {allProteins.length === 0 && <div className="text-sm text-gray-500">—</div>}
@@ -218,7 +218,7 @@ export function DishesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Time:</div>
                 <Select value={selectedTime} onValueChange={(value: DishTime | "all") => setSelectedTime(value)}>
                   <SelectTrigger className="w-28">
@@ -233,7 +233,7 @@ export function DishesPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium text-gray-700">Status:</div>
                 <Select value={selectedStatus} onValueChange={(value: DishStatus | "all") => setSelectedStatus(value)}>
                   <SelectTrigger className="w-40">
@@ -253,7 +253,7 @@ export function DishesPage() {
                 Spicy only
               </label>
 
-              <Button type="button" variant="link" className="ml-2 h-auto p-0" onClick={clearFilters}>
+              <Button type="button" variant="link" className="h-auto p-0 lg:ml-2" onClick={clearFilters}>
                 Clear
               </Button>
             </div>

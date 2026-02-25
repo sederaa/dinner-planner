@@ -132,6 +132,7 @@ export function PlannerPage() {
   const [plannerActionError, setPlannerActionError] = useState<string | null>(null);
   const [plannerLoadVersion, setPlannerLoadVersion] = useState(0);
   const [busyAction, setBusyAction] = useState<null | "lock" | "meal" | "day" | "suggest" | "clear" | "export">(null);
+  const [isMobilePlannerLayout, setIsMobilePlannerLayout] = useState(false);
   const [editingMeal, setEditingMeal] = useState<DayMealAssignment>({
     special: null,
     main: null,
@@ -395,6 +396,22 @@ export function PlannerPage() {
     const matchingRule = configuredRules.find((rule) => rule.type === violation.ruleType);
     return matchingRule?.name || violation.reason;
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobilePlannerLayout(mediaQuery.matches);
+
+    update();
+    mediaQuery.addEventListener("change", update);
+
+    return () => {
+      mediaQuery.removeEventListener("change", update);
+    };
+  }, []);
 
   useEffect(() => {
     if (dishesLoading || mealPlansLoaded) return;
@@ -1168,9 +1185,9 @@ export function PlannerPage() {
       </div>
 
       <Card className="border-gray-100 shadow-lg">
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays} disabled={plannerLoading || isBusy}>
               Auto-Suggest All
             </Button>
@@ -1221,7 +1238,7 @@ export function PlannerPage() {
               {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
               {autoSuggestMessage && <div className="mb-3 text-sm text-gray-600">{autoSuggestMessage}</div>}
               {plannerActionError && <div className="mb-3 text-sm text-red-700">{plannerActionError}</div>}
-              <div className="grid grid-cols-7 gap-3">
+              <div className={isMobilePlannerLayout ? "grid grid-cols-1 gap-3" : "grid grid-cols-7 gap-3"}>
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];
               const formattedDate = new Intl.DateTimeFormat(DATE_LOCALE, { day: "numeric", month: "short" }).format(date);

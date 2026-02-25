@@ -108,7 +108,7 @@ describe("DishesPage filter persistence", () => {
     await waitFor(() => {
       expect(screen.getByRole("checkbox", { name: "Main" })).toBeChecked();
       expect(screen.getByRole("checkbox", { name: "Spicy only" })).toBeChecked();
-      expect(screen.getByText("Spicy Tacos")).toBeInTheDocument();
+      expect(screen.getAllByText("Spicy Tacos").length).toBeGreaterThan(0);
       expect(screen.queryByText("Green Salad")).not.toBeInTheDocument();
     });
   });

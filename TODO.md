@@ -54,7 +54,7 @@
 - [x] Loading states & error handling
 - [x] User settings management
 - [x] Session-based filter persistence
-- [ ] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
+- [x] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
 - [ ] Design refactor
 
 ## Phase 6: Docker & Deploy (Day 8)
@@ -70,7 +70,7 @@
 
 **Phase:** 5 - Polish & History  
 **Last Updated:** 25 February 2026  
-**Next Task:** Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
+**Next Task:** Design refactor
 
 ---
 

@@ -38,14 +38,14 @@ export function Layout() {
       <nav>
         <Card className="rounded-none border-x-0 border-t-0 border-b border-gray-200 shadow-none bg-white">
           <CardContent className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-0">
-            <div className="flex gap-4">
+            <div className="flex gap-1 sm:gap-4 overflow-x-auto whitespace-nowrap">
               {navItems.map((item) => (
                 <Button
                   key={item.path}
                   asChild
                   variant="ghost"
                   className={cn(
-                    "rounded-none h-auto px-6 py-4 text-[14px] font-normal transition-colors relative border-b-2",
+                    "rounded-none h-auto px-3 sm:px-6 py-3 sm:py-4 text-[13px] sm:text-[14px] font-normal transition-colors relative border-b-2 shrink-0",
                     "hover:bg-transparent",
                     isActive(item.path) ? "text-gray-900 font-semibold border-blue-600" : "text-gray-600 hover:text-gray-900 border-transparent"
                   )}
