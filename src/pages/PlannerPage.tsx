@@ -402,7 +402,7 @@ export function PlannerPage() {
       return;
     }
 
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia("(max-width: 980px)");
     const update = () => setIsMobilePlannerLayout(mediaQuery.matches);
 
     update();
@@ -1178,18 +1178,18 @@ export function PlannerPage() {
   const isBusy = busyAction !== null;
 
   return (
-    <div className="space-y-4">
-      <Card className="saas-panel rounded-lg">
-        <CardContent className="p-5">
-          <h2 className="text-2xl font-semibold tracking-tight mb-1">Meal Planner</h2>
-          <p className="text-muted-foreground">Plan your dinners for the next 1-2 weeks with rule-aware suggestions.</p>
+    <div className="page-root">
+      <Card className="surface-panel">
+        <CardContent>
+          <h2 className="page-title">Meal Planner</h2>
+          <p className="page-subtitle">Plan your dinners for the next 1-2 weeks with rule-aware suggestions.</p>
         </CardContent>
       </Card>
 
-      <Card className="saas-panel rounded-lg">
-        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+      <Card className="surface-panel">
+        <CardHeader className="section-header-row">
+          <CardTitle>Week of {rangeLabel}</CardTitle>
+          <div className="planner-toolbar-actions">
             <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays} disabled={plannerLoading || isBusy}>
               Auto-Suggest All
             </Button>
@@ -1225,22 +1225,22 @@ export function PlannerPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent>
           {plannerLoading ? (
-            <div className="py-6 text-sm text-muted-foreground">Loading planner data...</div>
+            <div className="state-info">Loading planner data...</div>
           ) : plannerError ? (
-            <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="state-error">
               <div>{plannerError}</div>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={retryPlannerLoad}>
+              <Button type="button" variant="outline" size="sm" onClick={retryPlannerLoad}>
                 Retry
               </Button>
             </div>
           ) : (
             <>
-              {exportMessage && <div className="mb-3 text-sm text-muted-foreground">{exportMessage}</div>}
-              {autoSuggestMessage && <div className="mb-3 text-sm text-muted-foreground">{autoSuggestMessage}</div>}
-              {plannerActionError && <div className="mb-3 text-sm text-destructive">{plannerActionError}</div>}
-              <div className={isMobilePlannerLayout ? "grid grid-cols-1 gap-3" : "grid grid-cols-7 gap-3"}>
+              {exportMessage && <div className="state-info">{exportMessage}</div>}
+              {autoSuggestMessage && <div className="state-info">{autoSuggestMessage}</div>}
+              {plannerActionError && <div className="state-error-text">{plannerActionError}</div>}
+              <div className={isMobilePlannerLayout ? "planner-day-grid-mobile" : "planner-day-grid-desktop"}>
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];
               const formattedDate = new Intl.DateTimeFormat(DATE_LOCALE, { day: "numeric", month: "short" }).format(date);
@@ -1255,39 +1255,28 @@ export function PlannerPage() {
               const mealDebugTitle = getMealDebugTitle(dateKey, assignedMeal);
 
               return (
-                <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-primary/50 bg-primary/5 shadow-none" : "border-border bg-background shadow-none"}>
-                  <CardContent className="p-3 min-h-[130px]">
-                    <div className="mb-3 border-b border-border/60 pb-2 flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">{dayName}</div>
-                        <div className="text-sm font-semibold">{formattedDate}</div>
-                      </div>
-                      <div className="flex items-center gap-1">
+                <Card key={date.toISOString()} className={isCurrentWeekDay ? "planner-day-card planner-day-card-current" : "planner-day-card"}>
+                  <CardContent className="planner-day-content">
+                    <div className="planner-day-header">
+                      <div className="planner-day-header-left">
                         <Checkbox
                           checked={isSelected}
                           disabled={isLocked || plannerLoading || isBusy}
                           onCheckedChange={(checked) => toggleDaySelection(dateKey, checked === true)}
                           aria-label={`Select ${dayName} ${formattedDate}`}
                         />
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isLocked ? "default" : "outline"}
-                          className="h-6 px-2 text-xs"
-                          disabled={plannerLoading || isBusy}
-                          onClick={() => toggleDayLock(date)}
-                          aria-label={isLocked ? `Unlock ${dayName} ${formattedDate}` : `Lock ${dayName} ${formattedDate}`}
-                          title="Locks this day for auto-suggest only. Manual changes are still allowed."
-                        >
-                          {isLocked ? "🔒" : "🔓"}
-                        </Button>
-
-                        <div className="relative" ref={isDayMenuOpen ? openDayMenuContainerRef : undefined}>
+                        <div>
+                          <div className="planner-day-label">{dayName}</div>
+                          <div className="planner-day-date">{formattedDate}</div>
+                        </div>
+                      </div>
+                      <div className="planner-day-header-right">
+                        <div className="planner-menu-wrap" ref={isDayMenuOpen ? openDayMenuContainerRef : undefined}>
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="h-6 w-6 p-0 text-xs"
+                            className="planner-menu-trigger"
                             disabled={plannerLoading || isBusy}
                             onClick={() => setOpenDayMenuDateKey((current) => (current === dateKey ? null : dateKey))}
                             aria-label={`Open actions for ${dayName} ${formattedDate}`}
@@ -1297,19 +1286,30 @@ export function PlannerPage() {
                           </Button>
 
                           {isDayMenuOpen && (
-                            <div className="absolute right-0 z-20 mt-1 w-[14rem] rounded-md border border-border bg-popover p-1 shadow-sm">
+                            <div className="planner-menu" role="menu" aria-label={`Actions for ${dayName} ${formattedDate}`}>
                               <button
                                 type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-foreground hover:bg-secondary"
+                                className="planner-menu-item"
                                 disabled={isBusy}
                                 onClick={() => openDayEditorForDate(date)}
                               >
                                 Edit day details
                               </button>
-                              <div className="my-1 border-t border-border" />
                               <button
                                 type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-destructive hover:bg-secondary disabled:cursor-not-allowed disabled:text-muted-foreground"
+                                className="planner-menu-item"
+                                disabled={isBusy}
+                                onClick={async () => {
+                                  await toggleDayLock(date);
+                                  setOpenDayMenuDateKey(null);
+                                }}
+                              >
+                                {isLocked ? "Unlock day" : "Lock day"}
+                              </button>
+                              <div className="planner-menu-divider" />
+                              <button
+                                type="button"
+                                className="planner-menu-item danger-text"
                                 disabled={!assignedMeal || isBusy}
                                 onClick={async () => {
                                   await clearAssignedMeal(date);
@@ -1323,8 +1323,16 @@ export function PlannerPage() {
                         </div>
                       </div>
                     </div>
+                    {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay || isLocked) && (
+                      <div className="planner-day-flags">
+                        {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
+                        {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
+                        {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
+                        {isLocked && <span title="This day is locked from auto-suggest">🔒</span>}
+                      </div>
+                    )}
                     {assignedMeal ? (
-                      <div className="space-y-2" title={mealDebugTitle}>
+                      <div className="planner-day-body" title={mealDebugTitle}>
                         {assignedMeal.special ? (
                           <div className="text-sm font-medium">Special: {assignedMeal.special.name}</div>
                         ) : (
@@ -1339,44 +1347,28 @@ export function PlannerPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="h-7 px-2 text-xs"
                             disabled={plannerLoading || isBusy}
                             onClick={() => openMealEditorForDate(date)}
                           >
                             Change
                           </Button>
                         </div>
-                        {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
-                          <div className="text-[11px] text-muted-foreground flex flex-wrap gap-2">
-                            {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
-                            {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
-                            {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
-                          </div>
-                        )}
                         {dayViolations.length > 0 && (
-                          <div className="text-[11px] text-red-700">⚠ {dayViolations.map((violation) => getViolationLabel(violation)).join(" · ")}</div>
+                          <div className="planner-violation">⚠ {dayViolations.map((violation) => getViolationLabel(violation)).join(" · ")}</div>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="planner-day-body">
                         <div className="text-xs text-muted-foreground">No meal planned</div>
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-7 px-2 text-xs"
                           disabled={plannerLoading || isBusy}
                           onClick={() => openMealEditorForDate(date)}
                         >
                           + Add meal
                         </Button>
-                        {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
-                          <div className="text-[11px] text-muted-foreground flex flex-wrap gap-2">
-                            {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
-                            {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
-                            {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
-                          </div>
-                        )}
                       </div>
                     )}
                   </CardContent>
@@ -1396,26 +1388,26 @@ export function PlannerPage() {
             <DialogDescription>Select meal components. Day details are managed from the day actions menu.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+          <div className="planner-meal-editor">
             {dishesLoading ? (
-              <div className="text-sm text-muted-foreground">Loading dishes...</div>
+              <div className="state-info">Loading dishes...</div>
             ) : (
               <>
                 <Button
                   type="button"
                   variant={editingMeal.special?.id === "EATING_OUT" ? "default" : "outline"}
-                  className="w-full justify-start"
+                  className="meal-option-button"
                   onClick={toggleEatingOut}
                 >
                   Eating Out
                 </Button>
 
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Main</div>
+                <div className="form-section">
+                  <div className="meal-section-title">Main</div>
                   {mainMealOptions.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No available main dishes yet.</div>
+                    <div className="state-info">No available main dishes yet.</div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="meal-option-list">
                       {mainMealOptions.map((meal) => {
                         const isSelected = editingMeal.main?.id === meal.id;
                         const rankedEntry = rankedMainCandidatesById.get(meal.id);
@@ -1425,14 +1417,14 @@ export function PlannerPage() {
                           <Button
                             key={meal.id}
                             type="button"
-                            variant={isSelected ? "default" : "outline"}
-                            className="w-full justify-between"
+                            variant={isSelected ? "secondary" : "outline"}
+                            className="meal-option-button"
                             disabled={editingMeal.special !== null}
                             onClick={() => setMainMeal(meal)}
                             title={detailsTitle}
                           >
-                            <span className="text-left">{meal.name}</span>
-                            <span className="text-[11px] opacity-80 ml-2 text-right">{compactLine}</span>
+                            <span className="meal-option-name">{meal.name}</span>
+                            <span className="meal-option-meta">{compactLine}</span>
                           </Button>
                         );
                       })}
@@ -1440,20 +1432,20 @@ export function PlannerPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Sides (select multiple)</div>
+                <div className="form-section">
+                  <div className="meal-section-title">Sides (select multiple)</div>
                   {sideMealOptions.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No side dishes available.</div>
+                    <div className="state-info">No side dishes available.</div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="meal-option-list">
                       {sideMealOptions.map((meal) => {
                         const isSelected = editingMeal.sides.some((side) => side.id === meal.id);
                         return (
                           <Button
                             key={meal.id}
                             type="button"
-                            variant={isSelected ? "default" : "outline"}
-                            className="w-full justify-start"
+                            variant={isSelected ? "secondary" : "outline"}
+                            className="meal-option-button"
                             disabled={editingMeal.special !== null}
                             onClick={() => toggleSideMeal(meal)}
                           >
@@ -1465,29 +1457,29 @@ export function PlannerPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Dessert (optional)</div>
+                <div className="form-section">
+                  <div className="meal-section-title">Dessert (optional)</div>
                   <Button
                     type="button"
-                    variant={editingMeal.dessert === null ? "default" : "outline"}
-                    className="w-full justify-start"
+                    variant={editingMeal.dessert === null ? "secondary" : "outline"}
+                    className="meal-option-button"
                     disabled={editingMeal.special !== null}
                     onClick={() => setDessertMeal(null)}
                   >
                     No dessert
                   </Button>
                   {dessertMealOptions.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No dessert dishes available.</div>
+                    <div className="state-info">No dessert dishes available.</div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="meal-option-list">
                       {dessertMealOptions.map((meal) => {
                         const isSelected = editingMeal.dessert?.id === meal.id;
                         return (
                           <Button
                             key={meal.id}
                             type="button"
-                            variant={isSelected ? "default" : "outline"}
-                            className="w-full justify-start"
+                            variant={isSelected ? "secondary" : "outline"}
+                            className="meal-option-button"
                             disabled={editingMeal.special !== null}
                             onClick={() => setDessertMeal(meal)}
                           >
@@ -1499,7 +1491,7 @@ export function PlannerPage() {
                   )}
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="form-actions">
                   <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)} disabled={busyAction === "meal"}>
                     Cancel
                   </Button>

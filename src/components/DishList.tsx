@@ -92,7 +92,7 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
                   {course}
                 </span>
               ))}
-              <span className={getTimeBadge(dish.time)}>{dish.time}</span>
+              <span className={getTimeBadge(dish.time)}>Time: {dish.time}</span>
             </div>
 
             <div className="muted-text">

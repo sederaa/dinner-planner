@@ -207,7 +207,7 @@ export function DishesPage() {
                 </label>
               </div>
 
-              <div className="filter-row">
+              <div className="filter-row filter-row-controls">
                 <div className="filter-group">
                   <div className="filter-label">Proteins:</div>
                   <div className="chip-wrap">
@@ -221,7 +221,7 @@ export function DishesPage() {
                   </div>
                 </div>
 
-                <div className="filter-group">
+                <div className="filter-group filter-group-inline">
                   <div className="filter-label">Time:</div>
                   <Select value={selectedTime} onValueChange={(value: DishTime | "all") => setSelectedTime(value)}>
                     <SelectTrigger className="input-xs">
@@ -236,7 +236,7 @@ export function DishesPage() {
                   </Select>
                 </div>
 
-                <div className="filter-group">
+                <div className="filter-group filter-group-inline">
                   <div className="filter-label">Status:</div>
                   <Select value={selectedStatus} onValueChange={(value: DishStatus | "all") => setSelectedStatus(value)}>
                     <SelectTrigger className="input-md">

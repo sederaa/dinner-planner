@@ -223,6 +223,15 @@ a {
   flex-wrap: wrap;
 }
 
+.filter-row-controls {
+  align-items: center;
+}
+
+.filter-group-inline {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
 .form-row-between {
   justify-content: space-between;
 }
@@ -245,11 +254,12 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 30px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface-muted);
   color: var(--text);
-  padding: 5px 8px;
+  padding: 6px 8px;
   font-size: 12px;
 }
 
@@ -343,6 +353,10 @@ a {
 }
 
 .actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
   white-space: nowrap;
 }
 
@@ -506,6 +520,12 @@ a {
   color: var(--text);
 }
 
+.ui-select-trigger {
+  min-height: 28px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 .ui-textarea {
   min-height: 84px;
   resize: vertical;
@@ -544,7 +564,7 @@ a {
 
 .ui-select-content {
   position: relative;
-  z-index: 50;
+  z-index: 70;
   max-height: 320px;
   min-width: 8rem;
   overflow-y: auto;
@@ -634,11 +654,18 @@ a {
   right: 10px;
   width: 28px;
   height: 28px;
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
-  display: grid;
-  place-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-dialog-close svg {
+  display: block;
 }
 
 .ui-dialog-header {
@@ -668,6 +695,179 @@ a {
   max-width: 920px;
 }
 
+.planner-day-grid-desktop {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.planner-day-grid-mobile {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.planner-day-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.planner-day-card-current {
+  border-color: #b6b9f5;
+  background: #f3f4ff;
+}
+
+.planner-day-content {
+  min-height: 170px;
+  padding: 10px;
+}
+
+.planner-day-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.planner-day-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planner-day-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.planner-day-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.planner-day-date {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.planner-day-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.planner-day-body {
+  display: grid;
+  gap: 8px;
+}
+
+.planner-violation {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.planner-menu-wrap {
+  position: relative;
+}
+
+.planner-menu-trigger {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+}
+
+.planner-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  width: 180px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: 4px;
+}
+
+.planner-menu-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 7px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.planner-menu-item:hover {
+  background: var(--surface-muted);
+}
+
+.planner-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.planner-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.planner-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.planner-meal-editor {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: grid;
+  gap: 12px;
+}
+
+.meal-section-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meal-option-list {
+  display: grid;
+  gap: 8px;
+}
+
+.meal-option-button {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.meal-option-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.meal-option-meta {
+  margin-left: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
 @media (max-width: 900px) {
   .form-grid-two,
   .day-grid {
@@ -676,5 +876,11 @@ a {
 
   .action-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 980px) {
+  .planner-day-grid-desktop {
+    grid-template-columns: 1fr;
   }
 }

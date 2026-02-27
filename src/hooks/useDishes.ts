@@ -12,9 +12,11 @@ export function useDishes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDishes = async () => {
+  const fetchDishes = async (options?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!options?.silent) {
+        setLoading(true);
+      }
       setError(null);
 
       const { data, error: fetchError } = await supabase.from("dishes").select("*").order("name");
@@ -68,7 +70,7 @@ export function useDishes() {
 
       if (insertError) throw insertError;
 
-      await fetchDishes();
+      await fetchDishes({ silent: true });
 
       // Convert snake_case to camelCase for return
       const row = data as DishRow;
@@ -113,7 +115,7 @@ export function useDishes() {
 
       if (updateError) throw updateError;
 
-      await fetchDishes();
+      await fetchDishes({ silent: true });
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update dish");
@@ -128,7 +130,7 @@ export function useDishes() {
 
       if (deleteError) throw deleteError;
 
-      await fetchDishes();
+      await fetchDishes({ silent: true });
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete dish");
