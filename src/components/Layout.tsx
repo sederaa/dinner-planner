@@ -1,6 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
 import { cn } from "../lib/utils";
 
 export function Layout() {
@@ -21,48 +20,41 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header>
-        <Card className="rounded-none border-x-0 border-t-0 border-b border-gray-200 shadow-none bg-white">
-          <CardContent className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-0">
-            <div className="flex items-center h-16 gap-3">
-              <span className="text-2xl">🍽️</span>
-              <h1 className="text-xl font-semibold text-gray-900">Dinner Planner</h1>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-container app-header-inner">
+          <div className="app-brand-row">
+            <div className="app-brand">
+              <span className="app-brand-icon">🍽️</span>
+              <div>
+                <h1 className="app-title">Dinner Planner</h1>
+                <p className="app-subtitle">Weekly planning workspace</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <nav className="app-nav-wrap">
+              <div className="app-nav">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    asChild
+                    size="sm"
+                    variant={isActive(item.path) ? "secondary" : "ghost"}
+                    className={cn("app-nav-button", isActive(item.path) && "app-nav-button-active")}
+                  >
+                    <Link to={item.path}>
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </nav>
+          </div>
+        </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav>
-        <Card className="rounded-none border-x-0 border-t-0 border-b border-gray-200 shadow-none bg-white">
-          <CardContent className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-0">
-            <div className="flex gap-1 sm:gap-4 overflow-x-auto whitespace-nowrap">
-              {navItems.map((item) => (
-                <Button
-                  key={item.path}
-                  asChild
-                  variant="ghost"
-                  className={cn(
-                    "rounded-none h-auto px-3 sm:px-6 py-3 sm:py-4 text-[13px] sm:text-[14px] font-normal transition-colors relative border-b-2 shrink-0",
-                    "hover:bg-transparent",
-                    isActive(item.path) ? "text-gray-900 font-semibold border-blue-600" : "text-gray-600 hover:text-gray-900 border-transparent"
-                  )}
-                >
-                  <Link to={item.path}>
-                    <span className="text-base">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="app-container app-main">
         <Outlet />
       </main>
     </div>

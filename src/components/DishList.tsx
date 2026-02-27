@@ -30,12 +30,12 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
 
   if (dishes.length === 0) {
     return (
-      <Card className="rounded-lg border-gray-200">
-        <CardContent className="p-12">
-        <div className="text-center">
-          <div className="text-5xl mb-4">🍽️</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No dishes yet</h3>
-          <p className="text-gray-600">Get started by adding your first dish</p>
+      <Card className="surface-panel">
+        <CardContent className="state-message">
+        <div>
+          <div>🍽️</div>
+          <h3 className="section-title">No dishes yet</h3>
+          <p className="state-info">Get started by adding your first dish</p>
         </div>
         </CardContent>
       </Card>
@@ -44,18 +44,18 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      enabled: "bg-green-100 text-green-800",
-      manual_only: "bg-yellow-100 text-yellow-800",
-      disabled: "bg-gray-100 text-gray-800",
+      enabled: "badge badge-primary",
+      manual_only: "badge",
+      disabled: "badge badge-muted",
     };
     return styles[status as keyof typeof styles] || styles.enabled;
   };
 
   const getTimeBadge = (time: string) => {
     const styles = {
-      low: "bg-blue-100 text-blue-800",
-      medium: "bg-orange-100 text-orange-800",
-      high: "bg-red-100 text-red-800",
+      low: "badge badge-success",
+      medium: "badge",
+      high: "badge badge-danger",
     };
     return styles[time as keyof typeof styles] || styles.low;
   };
@@ -71,39 +71,39 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
   };
 
   return (
-    <Card className="rounded-lg border-gray-200 overflow-hidden">
+    <Card className="surface-panel">
       {isMobileLayout ? (
-      <div className="divide-y divide-gray-200">
+      <div className="table-mobile">
         {dishes.map((dish) => (
-          <div key={dish.id} className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
+          <div key={dish.id} className="table-mobile-row">
+            <div className="table-mobile-row-top">
               <div>
-                <div className="text-sm font-medium text-gray-900">{dish.name}</div>
-                {dish.isSpicy && <span className="text-xs text-red-600">🌶️ Spicy</span>}
+                <div className="table-name">{dish.name}</div>
+                {dish.isSpicy && <span className="badge badge-danger">🌶️ Spicy</span>}
               </div>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>
+              <span className={getStatusBadge(dish.status)}>
                 {getStatusLabel(dish.status)}
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-1">
+            <div className="chip-wrap">
               {dish.course.map((course) => (
-                <span key={course} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                <span key={course} className="badge">
                   {course}
                 </span>
               ))}
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTimeBadge(dish.time)}`}>{dish.time}</span>
+              <span className={getTimeBadge(dish.time)}>{dish.time}</span>
             </div>
 
-            <div className="text-xs text-gray-700">
+            <div className="muted-text">
               <span className="font-medium">Proteins:</span> {dish.proteins && dish.proteins.length > 0 ? dish.proteins.join(", ") : "—"}
             </div>
 
-            <div className="flex items-center gap-4">
-              <Button variant="link" className="h-auto p-0 text-blue-600 hover:text-blue-900" onClick={() => onEdit(dish)}>
+            <div className="inline-actions">
+              <Button variant="link" onClick={() => onEdit(dish)}>
                 Edit
               </Button>
-              <Button variant="link" className="h-auto p-0 text-red-600 hover:text-red-900" onClick={() => onDelete(dish)}>
+              <Button variant="link" className="danger-text" onClick={() => onDelete(dish)}>
                 Delete
               </Button>
             </div>
@@ -111,52 +111,44 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
         ))}
       </div>
       ) : (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="table-wrap">
+        <table className="app-table">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proteins</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Proteins</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {dishes.map((dish) => (
-              <tr key={dish.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{dish.name}</div>
-                      {dish.isSpicy && <span className="text-xs text-red-600">🌶️ Spicy</span>}
-                    </div>
+              <tr key={dish.id}>
+                <td>
+                  <div>
+                    <div className="table-name">{dish.name}</div>
+                    {dish.isSpicy && <span className="badge badge-danger">🌶️ Spicy</span>}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex gap-1">
+                <td>
+                  <div className="chip-wrap">
                     {dish.course.map((course) => (
-                      <span key={course} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      <span key={course} className="badge">
                         {course}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{dish.proteins && dish.proteins.length > 0 ? dish.proteins.join(", ") : "—"}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTimeBadge(dish.time)}`}>{dish.time}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(dish.status)}`}>{getStatusLabel(dish.status)}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Button variant="link" className="mr-4 h-auto p-0 text-blue-600 hover:text-blue-900" onClick={() => onEdit(dish)}>
+                <td>{dish.proteins && dish.proteins.length > 0 ? dish.proteins.join(", ") : "—"}</td>
+                <td><span className={getTimeBadge(dish.time)}>{dish.time}</span></td>
+                <td><span className={getStatusBadge(dish.status)}>{getStatusLabel(dish.status)}</span></td>
+                <td className="actions-cell">
+                  <Button variant="link" onClick={() => onEdit(dish)}>
                     Edit
                   </Button>
-                  <Button variant="link" className="h-auto p-0 text-red-600 hover:text-red-900" onClick={() => onDelete(dish)}>
+                  <Button variant="link" className="danger-text" onClick={() => onDelete(dish)}>
                     Delete
                   </Button>
                 </td>

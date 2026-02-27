@@ -124,13 +124,13 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="dish-dialog">
         <DialogHeader>
           <DialogTitle>{dish ? "Edit Dish" : "Add New Dish"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="form-stack">
           {/* Name */}
-          <div className="space-y-2">
+          <div className="form-section">
             <Label htmlFor="name">Dish Name *</Label>
             <Input
               id="name"
@@ -142,13 +142,13 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Course */}
-          <div className="space-y-2">
+          <div className="form-section">
             <Label>Course * (select at least one)</Label>
-            <div className="flex gap-4">
+            <div className="inline-group">
               {COURSE_TYPES.map((course) => (
-                <div key={course} className="flex items-center space-x-2">
+                <div key={course} className="inline-group-item">
                   <Checkbox id={`course-${course}`} checked={formData.course.includes(course)} onCheckedChange={() => toggleCourse(course)} />
-                  <label htmlFor={`course-${course}`} className="text-sm capitalize cursor-pointer">
+                  <label htmlFor={`course-${course}`} className="form-inline-label">
                     {course}
                   </label>
                 </div>
@@ -157,9 +157,9 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Proteins */}
-          <div className="space-y-2">
+          <div className="form-section">
             <Label htmlFor="protein">Proteins (leave empty for vegetarian)</Label>
-            <div className="flex gap-2">
+            <div className="inline-group">
               <Input
                 id="protein"
                 value={proteinInput}
@@ -171,11 +171,11 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
                 Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="chip-wrap">
               {formData.proteins.map((protein) => (
-                <span key={protein} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                <span key={protein} className="badge">
                   {protein}
-                  <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent hover:text-blue-900" onClick={() => removeProtein(protein)}>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeProtein(protein)}>
                     ×
                   </Button>
                 </span>
@@ -184,9 +184,9 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Key Ingredients */}
-          <div className="space-y-2">
+          <div className="form-section">
             <Label htmlFor="ingredient">Key Ingredients *</Label>
-            <div className="flex gap-2">
+            <div className="inline-group">
               <Input
                 id="ingredient"
                 value={ingredientInput}
@@ -198,15 +198,14 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
                 Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="chip-wrap">
               {formData.keyIngredients.map((ingredient) => (
-                <span key={ingredient} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                <span key={ingredient} className="badge">
                   {ingredient}
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-4 w-4 p-0 hover:bg-transparent hover:text-green-900"
                     onClick={() => removeIngredient(ingredient)}
                   >
                     ×
@@ -217,8 +216,8 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Time & Spicy */}
-          <div className={`grid gap-4 ${dish ? "grid-cols-2" : "grid-cols-1"}`}>
-            <div className="space-y-2">
+          <div className={dish ? "form-grid-two" : "form-grid-one"}>
+            <div className="form-section">
               <Label htmlFor="time">Time & Difficulty *</Label>
               <Select value={formData.time} onValueChange={(value: DishTime) => setFormData({ ...formData, time: value })}>
                 <SelectTrigger>
@@ -226,7 +225,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
                 </SelectTrigger>
                 <SelectContent>
                   {DISH_TIMES.map((time) => (
-                    <SelectItem key={time} value={time} className="capitalize">
+                    <SelectItem key={time} value={time}>
                       {time}
                     </SelectItem>
                   ))}
@@ -234,7 +233,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
               </Select>
             </div>
             {dish && (
-              <div className="space-y-2">
+              <div className="form-section">
                 <Label htmlFor="status">Status *</Label>
                 <Select value={formData.status} onValueChange={(value: DishStatus) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
@@ -253,15 +252,15 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Spicy checkbox */}
-          <div className="flex items-center space-x-2">
+          <div className="inline-group-item">
             <Checkbox id="isSpicy" checked={formData.isSpicy} onCheckedChange={(checked) => setFormData({ ...formData, isSpicy: checked === true })} />
-            <label htmlFor="isSpicy" className="text-sm cursor-pointer">
+            <label htmlFor="isSpicy" className="form-inline-label">
               🌶️ This dish is spicy
             </label>
           </div>
 
           {/* Notes */}
-          <div className="space-y-2">
+          <div className="form-section">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
@@ -273,7 +272,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="form-actions">
             <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
               Cancel
             </Button>

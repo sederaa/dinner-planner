@@ -136,16 +136,18 @@ export function RulesPage() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">⚙️ Rules Configuration</h2>
-        <p className="text-gray-600">Configure rules for meal suggestions</p>
-      </div>
+    <div className="page-root">
+      <Card className="surface-panel">
+        <CardContent>
+          <h2 className="page-title">Rules Engine</h2>
+          <p className="page-subtitle">Tune scoring behavior used by auto-suggestions and ranking.</p>
+        </CardContent>
+      </Card>
 
-      <Card className="border-gray-100 shadow-lg">
-        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <CardTitle className="text-lg">Rules</CardTitle>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <Card className="surface-panel">
+        <CardHeader className="section-header-row">
+          <CardTitle>Rule Configuration</CardTitle>
+          <div className="section-actions">
             {errorMessage && loading && (
               <Button type="button" size="sm" variant="outline" onClick={loadRules}>
                 Retry
@@ -156,17 +158,17 @@ export function RulesPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {saveMessage && <div className="text-sm text-gray-600">{saveMessage}</div>}
-          {errorMessage && <div className="text-sm text-red-700">{errorMessage}</div>}
+        <CardContent className="page-stack">
+          {saveMessage && <div className="state-info">{saveMessage}</div>}
+          {errorMessage && <div className="state-error-text">{errorMessage}</div>}
 
           {loading ? (
-            <div className="text-sm text-gray-500 py-4">Loading rules...</div>
+            <div className="state-info">Loading rules...</div>
           ) : (
             rules.map((rule) => (
-              <div key={rule.type} className="rounded-md border border-gray-200 p-3 space-y-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-900">
+              <div key={rule.type} className="rule-card">
+                <div className="form-row-between">
+                  <label className="inline-group-item strong-label">
                     <Checkbox
                       checked={rule.enabled}
                       onCheckedChange={(checked) =>
@@ -179,7 +181,7 @@ export function RulesPage() {
                     {rule.name}
                   </label>
 
-                  <div className="w-full sm:w-28">
+                  <div className="input-sm-wrap">
                     <Input
                       type="number"
                       value={String(rule.points)}
@@ -196,11 +198,11 @@ export function RulesPage() {
                 </div>
 
                 {rule.type === "no_consecutive_same_protein" && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="text-sm text-gray-600">Max consecutive days:</div>
+                  <div className="form-row">
+                    <div className="muted-text">Max consecutive days:</div>
                     <Input
                       type="number"
-                      className="w-20"
+                      className="input-xs"
                       value={String((rule.parameters.maxConsecutiveDays as number) ?? 1)}
                       onChange={(event) => {
                         const nextValue = Number(event.target.value);
@@ -217,11 +219,11 @@ export function RulesPage() {
                 )}
 
                 {rule.type === "prioritize_ingredient" && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="text-sm text-gray-600">Ingredient:</div>
+                  <div className="form-row">
+                    <div className="muted-text">Ingredient:</div>
                     <Input
                       type="text"
-                      className="max-w-xs"
+                      className="input-md"
                       value={String((rule.parameters.ingredient as string) ?? "")}
                       onChange={(event) => {
                         updateRule(rule.type, (current) => ({
@@ -238,11 +240,11 @@ export function RulesPage() {
                 )}
 
                 {rule.type === "dish_cooldown_period" && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="text-sm text-gray-600">Cooldown days:</div>
+                  <div className="form-row">
+                    <div className="muted-text">Cooldown days:</div>
                     <Input
                       type="number"
-                      className="w-20"
+                      className="input-xs"
                       value={String((rule.parameters.cooldownDays as number) ?? 5)}
                       onChange={(event) => {
                         const nextValue = Number(event.target.value);

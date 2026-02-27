@@ -121,31 +121,33 @@ export function SettingsPage() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">🔧 Settings</h2>
-        <p className="text-gray-600">Configure your preferences and defaults</p>
-      </div>
+    <div className="page-root">
+      <Card className="surface-panel">
+        <CardContent>
+          <h2 className="page-title">Settings</h2>
+          <p className="page-subtitle">Control planning horizon and office-day defaults used by the planner.</p>
+        </CardContent>
+      </Card>
 
-      <Card className="border-gray-100 shadow-lg">
-        <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <CardTitle className="text-lg">User Settings</CardTitle>
-          <Button type="button" size="sm" onClick={saveSettings} disabled={loading || saving} className="w-full sm:w-auto">
+      <Card className="surface-panel">
+        <CardHeader className="section-header-row">
+          <CardTitle>User Settings</CardTitle>
+          <Button type="button" size="sm" onClick={saveSettings} disabled={loading || saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {saveMessage && <div className="text-sm text-gray-600">{saveMessage}</div>}
-          {errorMessage && <div className="text-sm text-red-700">{errorMessage}</div>}
+        <CardContent className="page-stack">
+          {saveMessage && <div className="state-info">{saveMessage}</div>}
+          {errorMessage && <div className="state-error-text">{errorMessage}</div>}
 
           {loading ? (
-            <div className="text-sm text-gray-500 py-4">Loading settings...</div>
+            <div className="state-info">Loading settings...</div>
           ) : (
             <>
-              <div className="space-y-2">
+              <div className="form-section">
                 <Label>Planning Horizon</Label>
                 <Select value={String(planningHorizonDays)} onValueChange={(value) => setPlanningHorizonDays(value === "7" ? 7 : 14)}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="input-md">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -155,14 +157,14 @@ export function SettingsPage() {
                 </Select>
               </div>
 
-              <div className="space-y-3">
-                <div className="text-sm font-medium text-gray-900">Default Office Days (Next Day)</div>
+              <div className="form-section">
+                <div className="strong-label">Default Office Days (Next Day)</div>
 
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-600">Person A</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="form-section">
+                  <div className="muted-text">Person A</div>
+                  <div className="day-grid">
                     {WEEKDAY_OPTIONS.map((day) => (
-                      <label key={`person-a-${day.key}`} className="inline-flex items-center gap-2 text-sm">
+                      <label key={`person-a-${day.key}`} className="chip-toggle">
                         <Checkbox checked={personAOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("A", day.key)} />
                         {day.label}
                       </label>
@@ -170,11 +172,11 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-600">Person B</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="form-section">
+                  <div className="muted-text">Person B</div>
+                  <div className="day-grid">
                     {WEEKDAY_OPTIONS.map((day) => (
-                      <label key={`person-b-${day.key}`} className="inline-flex items-center gap-2 text-sm">
+                      <label key={`person-b-${day.key}`} className="chip-toggle">
                         <Checkbox checked={personBOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("B", day.key)} />
                         {day.label}
                       </label>

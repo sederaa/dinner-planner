@@ -1178,13 +1178,15 @@ export function PlannerPage() {
   const isBusy = busyAction !== null;
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">📅 Meal Planner</h2>
-        <p className="text-gray-600">Plan your dinners for the next 1-2 weeks</p>
-      </div>
+    <div className="space-y-4">
+      <Card className="saas-panel rounded-lg">
+        <CardContent className="p-5">
+          <h2 className="text-2xl font-semibold tracking-tight mb-1">Meal Planner</h2>
+          <p className="text-muted-foreground">Plan your dinners for the next 1-2 weeks with rule-aware suggestions.</p>
+        </CardContent>
+      </Card>
 
-      <Card className="border-gray-100 shadow-lg">
+      <Card className="saas-panel rounded-lg">
         <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle className="text-lg">Week of {rangeLabel}</CardTitle>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
@@ -1225,7 +1227,7 @@ export function PlannerPage() {
         </CardHeader>
         <CardContent className="pt-0">
           {plannerLoading ? (
-            <div className="py-6 text-sm text-gray-500">Loading planner data...</div>
+            <div className="py-6 text-sm text-muted-foreground">Loading planner data...</div>
           ) : plannerError ? (
             <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               <div>{plannerError}</div>
@@ -1235,9 +1237,9 @@ export function PlannerPage() {
             </div>
           ) : (
             <>
-              {exportMessage && <div className="mb-3 text-sm text-gray-600">{exportMessage}</div>}
-              {autoSuggestMessage && <div className="mb-3 text-sm text-gray-600">{autoSuggestMessage}</div>}
-              {plannerActionError && <div className="mb-3 text-sm text-red-700">{plannerActionError}</div>}
+              {exportMessage && <div className="mb-3 text-sm text-muted-foreground">{exportMessage}</div>}
+              {autoSuggestMessage && <div className="mb-3 text-sm text-muted-foreground">{autoSuggestMessage}</div>}
+              {plannerActionError && <div className="mb-3 text-sm text-destructive">{plannerActionError}</div>}
               <div className={isMobilePlannerLayout ? "grid grid-cols-1 gap-3" : "grid grid-cols-7 gap-3"}>
             {days.map((date, index) => {
               const dayName = DAY_NAMES[index % 7];
@@ -1253,12 +1255,12 @@ export function PlannerPage() {
               const mealDebugTitle = getMealDebugTitle(dateKey, assignedMeal);
 
               return (
-                <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-yellow-300 !bg-[#FFFACD] shadow-none" : "border-gray-200 shadow-none"}>
+                <Card key={date.toISOString()} className={isCurrentWeekDay ? "border-primary/50 bg-primary/5 shadow-none" : "border-border bg-background shadow-none"}>
                   <CardContent className="p-3 min-h-[130px]">
-                    <div className="mb-3 border-b border-gray-100 pb-2 flex items-start justify-between gap-2">
+                    <div className="mb-3 border-b border-border/60 pb-2 flex items-start justify-between gap-2">
                       <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">{dayName}</div>
-                        <div className="text-sm font-semibold text-gray-900">{formattedDate}</div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide">{dayName}</div>
+                        <div className="text-sm font-semibold">{formattedDate}</div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Checkbox
@@ -1295,19 +1297,19 @@ export function PlannerPage() {
                           </Button>
 
                           {isDayMenuOpen && (
-                            <div className="absolute right-0 z-20 mt-1 w-[14rem] rounded-md border border-gray-200 bg-white p-1 shadow-md">
+                            <div className="absolute right-0 z-20 mt-1 w-[14rem] rounded-md border border-border bg-popover p-1 shadow-sm">
                               <button
                                 type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-gray-700 hover:bg-gray-100"
+                                className="w-full rounded px-2 py-1 text-left text-xs text-foreground hover:bg-secondary"
                                 disabled={isBusy}
                                 onClick={() => openDayEditorForDate(date)}
                               >
                                 Edit day details
                               </button>
-                              <div className="my-1 border-t border-gray-200" />
+                              <div className="my-1 border-t border-border" />
                               <button
                                 type="button"
-                                className="w-full rounded px-2 py-1 text-left text-xs text-red-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                                className="w-full rounded px-2 py-1 text-left text-xs text-destructive hover:bg-secondary disabled:cursor-not-allowed disabled:text-muted-foreground"
                                 disabled={!assignedMeal || isBusy}
                                 onClick={async () => {
                                   await clearAssignedMeal(date);
@@ -1324,12 +1326,12 @@ export function PlannerPage() {
                     {assignedMeal ? (
                       <div className="space-y-2" title={mealDebugTitle}>
                         {assignedMeal.special ? (
-                          <div className="text-sm text-gray-900 font-medium">Special: {assignedMeal.special.name}</div>
+                          <div className="text-sm font-medium">Special: {assignedMeal.special.name}</div>
                         ) : (
                           <>
-                            {assignedMeal.main && <div className="text-sm text-gray-900 font-medium">Main: {assignedMeal.main.name}</div>}
-                            {assignedMeal.sides.length > 0 && <div className="text-xs text-gray-700">Sides: {assignedMeal.sides.map((side) => side.name).join(", ")}</div>}
-                            {assignedMeal.dessert && <div className="text-xs text-gray-700">Dessert: {assignedMeal.dessert.name}</div>}
+                            {assignedMeal.main && <div className="text-sm font-medium">Main: {assignedMeal.main.name}</div>}
+                            {assignedMeal.sides.length > 0 && <div className="text-xs text-muted-foreground">Sides: {assignedMeal.sides.map((side) => side.name).join(", ")}</div>}
+                            {assignedMeal.dessert && <div className="text-xs text-muted-foreground">Dessert: {assignedMeal.dessert.name}</div>}
                           </>
                         )}
                         <div className="flex gap-2">
@@ -1345,7 +1347,7 @@ export function PlannerPage() {
                           </Button>
                         </div>
                         {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
-                          <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
+                          <div className="text-[11px] text-muted-foreground flex flex-wrap gap-2">
                             {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
                             {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
                             {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
@@ -1357,7 +1359,7 @@ export function PlannerPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="text-xs text-gray-400">No meal planned</div>
+                        <div className="text-xs text-muted-foreground">No meal planned</div>
                         <Button
                           type="button"
                           size="sm"
@@ -1369,7 +1371,7 @@ export function PlannerPage() {
                           + Add meal
                         </Button>
                         {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay) && (
-                          <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
+                          <div className="text-[11px] text-muted-foreground flex flex-wrap gap-2">
                             {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
                             {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
                             {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
@@ -1396,7 +1398,7 @@ export function PlannerPage() {
 
           <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
             {dishesLoading ? (
-              <div className="text-sm text-gray-500">Loading dishes...</div>
+              <div className="text-sm text-muted-foreground">Loading dishes...</div>
             ) : (
               <>
                 <Button
@@ -1409,9 +1411,9 @@ export function PlannerPage() {
                 </Button>
 
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-900">Main</div>
+                  <div className="text-sm font-medium">Main</div>
                   {mainMealOptions.length === 0 ? (
-                    <div className="text-sm text-gray-500">No available main dishes yet.</div>
+                    <div className="text-sm text-muted-foreground">No available main dishes yet.</div>
                   ) : (
                     <div className="grid gap-2">
                       {mainMealOptions.map((meal) => {
@@ -1439,9 +1441,9 @@ export function PlannerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-900">Sides (select multiple)</div>
+                  <div className="text-sm font-medium">Sides (select multiple)</div>
                   {sideMealOptions.length === 0 ? (
-                    <div className="text-sm text-gray-500">No side dishes available.</div>
+                    <div className="text-sm text-muted-foreground">No side dishes available.</div>
                   ) : (
                     <div className="grid gap-2">
                       {sideMealOptions.map((meal) => {
@@ -1464,7 +1466,7 @@ export function PlannerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-900">Dessert (optional)</div>
+                  <div className="text-sm font-medium">Dessert (optional)</div>
                   <Button
                     type="button"
                     variant={editingMeal.dessert === null ? "default" : "outline"}
@@ -1475,7 +1477,7 @@ export function PlannerPage() {
                     No dessert
                   </Button>
                   {dessertMealOptions.length === 0 ? (
-                    <div className="text-sm text-gray-500">No dessert dishes available.</div>
+                    <div className="text-sm text-muted-foreground">No dessert dishes available.</div>
                   ) : (
                     <div className="grid gap-2">
                       {dessertMealOptions.map((meal) => {
@@ -1527,7 +1529,7 @@ export function PlannerPage() {
               Guests coming
             </label>
 
-            <div className="text-sm font-medium text-gray-900">Office next day</div>
+            <div className="text-sm font-medium">Office next day</div>
             <div className="flex gap-4">
               <label className="inline-flex items-center text-sm gap-2">
                 <Checkbox
