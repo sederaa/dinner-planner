@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -13,13 +13,51 @@ interface DishFormDialogProps {
   onClose: () => void;
   onSubmit: (data: DishFormData) => Promise<void>;
   dish?: Dish | null;
+  existingDishes?: Dish[];
 }
 
 const COURSE_TYPES: CourseType[] = ["main", "side", "dessert"];
 const DISH_TIMES: DishTime[] = ["low", "medium", "high"];
 const DISH_STATUSES: DishStatus[] = ["enabled", "manual_only", "disabled"];
 
-export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialogProps) {
+const normalizeValue = (value: string) => value.trim().toLowerCase();
+
+const includesNormalized = (values: string[], candidate: string) => {
+  const normalizedCandidate = normalizeValue(candidate);
+  return values.some((value) => normalizeValue(value) === normalizedCandidate);
+};
+
+const getMostCommonValues = (values: string[]): string[] => {
+  const counts = new Map<string, { label: string; count: number }>();
+
+  values.forEach((value) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const normalized = normalizeValue(trimmed);
+    const current = counts.get(normalized);
+    if (current) {
+      counts.set(normalized, { ...current, count: current.count + 1 });
+      return;
+    }
+
+    counts.set(normalized, { label: trimmed, count: 1 });
+  });
+
+  return Array.from(counts.values())
+    .sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+      return a.label.localeCompare(b.label);
+    })
+    .slice(0, 10)
+    .map((item) => item.label);
+};
+
+export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes = [] }: DishFormDialogProps) {
   const [formData, setFormData] = useState<DishFormData>({
     name: "",
     course: [],
@@ -35,6 +73,16 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
   const [proteinInput, setProteinInput] = useState("");
   const [ingredientInput, setIngredientInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const commonProteinSuggestions = useMemo(() => {
+    const proteins = existingDishes.flatMap((existingDish) => existingDish.proteins || []);
+    return getMostCommonValues(proteins).filter((protein) => !includesNormalized(formData.proteins, protein));
+  }, [existingDishes, formData.proteins]);
+
+  const commonIngredientSuggestions = useMemo(() => {
+    const ingredients = existingDishes.flatMap((existingDish) => existingDish.keyIngredients || []);
+    return getMostCommonValues(ingredients).filter((ingredient) => !includesNormalized(formData.keyIngredients, ingredient));
+  }, [existingDishes, formData.keyIngredients]);
 
   useEffect(() => {
     if (dish) {
@@ -89,7 +137,7 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
   };
 
   const addProtein = () => {
-    if (proteinInput.trim() && !formData.proteins.includes(proteinInput.trim())) {
+    if (proteinInput.trim() && !includesNormalized(formData.proteins, proteinInput.trim())) {
       setFormData((prev) => ({
         ...prev,
         proteins: [...prev.proteins, proteinInput.trim()],
@@ -105,8 +153,17 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
     }));
   };
 
+  const addSuggestedProtein = (protein: string) => {
+    if (!includesNormalized(formData.proteins, protein)) {
+      setFormData((prev) => ({
+        ...prev,
+        proteins: [...prev.proteins, protein],
+      }));
+    }
+  };
+
   const addIngredient = () => {
-    if (ingredientInput.trim() && !formData.keyIngredients.includes(ingredientInput.trim())) {
+    if (ingredientInput.trim() && !includesNormalized(formData.keyIngredients, ingredientInput.trim())) {
       setFormData((prev) => ({
         ...prev,
         keyIngredients: [...prev.keyIngredients, ingredientInput.trim()],
@@ -120,6 +177,15 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
       ...prev,
       keyIngredients: prev.keyIngredients.filter((i) => i !== ingredient),
     }));
+  };
+
+  const addSuggestedIngredient = (ingredient: string) => {
+    if (!includesNormalized(formData.keyIngredients, ingredient)) {
+      setFormData((prev) => ({
+        ...prev,
+        keyIngredients: [...prev.keyIngredients, ingredient],
+      }));
+    }
   };
 
   return (
@@ -170,6 +236,18 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
               <Button type="button" onClick={addProtein}>
                 Add
               </Button>
+              {commonProteinSuggestions.map((protein) => (
+                <Button
+                  key={protein}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="quick-add-suggestion"
+                  onClick={() => addSuggestedProtein(protein)}
+                >
+                  + {protein}
+                </Button>
+              ))}
             </div>
             <div className="chip-wrap">
               {formData.proteins.map((protein) => (
@@ -197,6 +275,18 @@ export function DishFormDialog({ open, onClose, onSubmit, dish }: DishFormDialog
               <Button type="button" onClick={addIngredient}>
                 Add
               </Button>
+              {commonIngredientSuggestions.map((ingredient) => (
+                <Button
+                  key={ingredient}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="quick-add-suggestion"
+                  onClick={() => addSuggestedIngredient(ingredient)}
+                >
+                  + {ingredient}
+                </Button>
+              ))}
             </div>
             <div className="chip-wrap">
               {formData.keyIngredients.map((ingredient) => (

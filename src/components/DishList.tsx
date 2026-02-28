@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Dish, DishStatus } from "../types/dish";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -9,8 +9,13 @@ interface DishListProps {
   onDelete: (dish: Dish) => void;
 }
 
+type SortColumn = "name" | "type" | "proteins" | "time" | "status";
+type SortDirection = "asc" | "desc";
+
 export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -70,11 +75,78 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
     return labels[status];
   };
 
+  const sortedDishes = useMemo(() => {
+    const timeOrder: Record<Dish["time"], number> = {
+      low: 0,
+      medium: 1,
+      high: 2,
+    };
+
+    const statusOrder: Record<DishStatus, number> = {
+      enabled: 0,
+      manual_only: 1,
+      disabled: 2,
+    };
+
+    const getCourseLabel = (dish: Dish) => [...dish.course].sort().join(", ");
+    const getProteinLabel = (dish: Dish) => (dish.proteins && dish.proteins.length > 0 ? dish.proteins.join(", ") : "");
+
+    const sorted = [...dishes].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortColumn === "name") {
+        comparison = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      }
+
+      if (sortColumn === "type") {
+        comparison = getCourseLabel(a).localeCompare(getCourseLabel(b), undefined, { sensitivity: "base" });
+      }
+
+      if (sortColumn === "proteins") {
+        comparison = getProteinLabel(a).localeCompare(getProteinLabel(b), undefined, { sensitivity: "base" });
+      }
+
+      if (sortColumn === "time") {
+        comparison = timeOrder[a.time] - timeOrder[b.time];
+      }
+
+      if (sortColumn === "status") {
+        comparison = statusOrder[a.status] - statusOrder[b.status];
+      }
+
+      if (comparison === 0) {
+        comparison = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      }
+
+      return sortDirection === "asc" ? comparison : comparison * -1;
+    });
+
+    return sorted;
+  }, [dishes, sortColumn, sortDirection]);
+
+  const handleHeaderSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection("asc");
+  };
+
+  const sortIndicator = (column: SortColumn) => {
+    if (sortColumn !== column) {
+      return "↕";
+    }
+
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
   return (
     <Card className="surface-panel">
       {isMobileLayout ? (
       <div className="table-mobile">
-        {dishes.map((dish) => (
+        {sortedDishes.map((dish) => (
           <div key={dish.id} className="table-mobile-row">
             <div className="table-mobile-row-top">
               <div>
@@ -115,16 +187,26 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
         <table className="app-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Proteins</th>
-              <th>Time</th>
-              <th>Status</th>
+              <th>
+                <Button variant="ghost" onClick={() => handleHeaderSort("name")}>Name {sortIndicator("name")}</Button>
+              </th>
+              <th>
+                <Button variant="ghost" onClick={() => handleHeaderSort("type")}>Type {sortIndicator("type")}</Button>
+              </th>
+              <th>
+                <Button variant="ghost" onClick={() => handleHeaderSort("proteins")}>Proteins {sortIndicator("proteins")}</Button>
+              </th>
+              <th>
+                <Button variant="ghost" onClick={() => handleHeaderSort("time")}>Time {sortIndicator("time")}</Button>
+              </th>
+              <th>
+                <Button variant="ghost" onClick={() => handleHeaderSort("status")}>Status {sortIndicator("status")}</Button>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {dishes.map((dish) => (
+            {sortedDishes.map((dish) => (
               <tr key={dish.id}>
                 <td>
                   <div>

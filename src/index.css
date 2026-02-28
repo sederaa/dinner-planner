@@ -481,7 +481,7 @@ a {
 
 .ui-button-outline {
   border-color: var(--border);
-  background: var(--surface);
+  background: none;
   color: var(--text);
 }
 
@@ -662,10 +662,39 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ui-dialog-close:hover {
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 .ui-dialog-close svg {
   display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ui-button-outline.quick-add-suggestion {
+  color: var(--text-muted);
+}
+
+.ui-button-outline.quick-add-suggestion:hover {
+  color: var(--text);
 }
 
 .ui-dialog-header {

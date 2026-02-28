@@ -55,10 +55,10 @@
 - [x] User settings management
 - [x] Session-based filter persistence
 - [x] Responsive design for mobile browsers (touch-friendly, mobile-sized screens)
-- [ ] Design refactor
-- [ ] Minor features
-  - [ ] Dish modal: Fields with tags like Proteins and Key Ingredients, show 10 most common ingredients next to Add button in lighter colour for easy adding.
-  - [ ] Dish list: Add sorting to column headers
+- [x] Design refactor
+- [x] Minor features
+  - [x] Dish modal: Fields with tags like Proteins and Key Ingredients, show 10 most common ingredients next to Add button in lighter colour for easy adding.
+  - [x] Dish list: Add sorting to column headers
 
 ## Phase 6: Docker & Deploy (Day 8)
 

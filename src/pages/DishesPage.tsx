@@ -267,7 +267,13 @@ export function DishesPage() {
         </div>
       )}
 
-      <DishFormDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleSubmit} dish={editingDish} />
+      <DishFormDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSubmit={handleSubmit}
+        dish={editingDish}
+        existingDishes={dishes}
+      />
     </div>
   );
 }
