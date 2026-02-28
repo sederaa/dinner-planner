@@ -1,1 +1,148 @@
-# dinner-planner
+# Dinner Planner
+
+A React + TypeScript web application for planning weekly/bi-weekly dinner menus with smart rules engine and auto-suggestion capabilities.
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js v18+ (project uses Node v25)
+- nvm (Node Version Manager)
+- Supabase account with project configured
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+```
+
+### Starting the Development Server
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && cd "/Users/sebastianderaadt/Documents/Projects/Dinner Planner/dinner-planner" && npm run dev
+```
+
+The app will be available at http://localhost:5173/
+
+### Running Tests (non-watch)
+
+To avoid interactive Vitest watch mode hanging in terminal sessions, use one-shot test commands:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run
+```
+
+Run specific files:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run -- src/pages/PlannerPage.test.tsx
+```
+
+Notes:
+
+- `npm test` runs `vitest` (watch mode)
+- `npm run test:run` runs `vitest run` (non-watch, exits automatically)
+
+### Validation After Major Changes
+
+After every major change (for example, after completing a TODO item), run both:
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 25 && npm run build
+source ~/.nvm/nvm.sh && nvm use 25 && npm run test:run
+```
+
+Fix any build or test failures before marking the work as complete.
+
+### Supabase RLS setup
+
+If Supabase flags `RLS Disabled in Public`, run the migration in:
+
+- `supabase/migrations/20260219_enable_rls_public_tables.sql`
+
+Quickest way:
+
+1. Open Supabase Dashboard → SQL Editor.
+2. Paste the SQL from that file.
+3. Run it once.
+
+This enables RLS on the app tables (`dishes`, `meal_plans`, `rules_config`, `user_settings`) and adds explicit policies for `anon` and `authenticated` to preserve the app's current single-user behavior.
+
+---
+
+## Original Vite Template Information
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(["dist"]),
+  {
+    files: ["**/*.{ts,tsx}"],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+]);
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from "eslint-plugin-react-x";
+import reactDom from "eslint-plugin-react-dom";
+
+export default defineConfig([
+  globalIgnores(["dist"]),
+  {
+    files: ["**/*.{ts,tsx}"],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs["recommended-typescript"],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+]);
+```
