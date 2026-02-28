@@ -263,6 +263,10 @@ a {
   font-size: 12px;
 }
 
+.chip-toggle input[type="radio"] {
+  margin: 0;
+}
+
 .badge-primary {
   background: #eef0ff;
   color: var(--primary);
@@ -867,6 +871,13 @@ a {
   padding-right: 4px;
   display: grid;
   gap: 12px;
+}
+
+.meal-editor-tabs,
+.meal-sort-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .meal-section-title {

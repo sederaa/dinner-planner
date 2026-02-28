@@ -184,6 +184,8 @@ export function RulesPage() {
                   <div className="input-sm-wrap">
                     <Input
                       type="number"
+                      name={`${rule.type}-points`}
+                      autoComplete="off"
                       value={String(rule.points)}
                       onChange={(event) => {
                         const nextValue = Number(event.target.value);
@@ -202,6 +204,8 @@ export function RulesPage() {
                     <div className="muted-text">Max consecutive days:</div>
                     <Input
                       type="number"
+                      name="maxConsecutiveDays"
+                      autoComplete="off"
                       className="input-xs"
                       value={String((rule.parameters.maxConsecutiveDays as number) ?? 1)}
                       onChange={(event) => {
@@ -223,6 +227,8 @@ export function RulesPage() {
                     <div className="muted-text">Ingredient:</div>
                     <Input
                       type="text"
+                      name="priorityIngredient"
+                      autoComplete="off"
                       className="input-md"
                       value={String((rule.parameters.ingredient as string) ?? "")}
                       onChange={(event) => {
@@ -244,6 +250,8 @@ export function RulesPage() {
                     <div className="muted-text">Cooldown days:</div>
                     <Input
                       type="number"
+                      name="cooldownDays"
+                      autoComplete="off"
                       className="input-xs"
                       value={String((rule.parameters.cooldownDays as number) ?? 5)}
                       onChange={(event) => {

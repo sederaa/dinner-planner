@@ -23,6 +23,9 @@ type MealOption = {
   name: string;
 };
 
+type MealEditorTab = "main" | "sides" | "dessert";
+type MealSortMode = "name" | "score";
+
 type DayMealAssignment = {
   special: MealOption | null;
   main: MealOption | null;
@@ -139,6 +142,10 @@ export function PlannerPage() {
     sides: [],
     dessert: null,
   });
+  const [mealEditorTab, setMealEditorTab] = useState<MealEditorTab>("main");
+  const [mainSortMode, setMainSortMode] = useState<MealSortMode>("score");
+  const [sideSortMode, setSideSortMode] = useState<MealSortMode>("name");
+  const [dessertSortMode, setDessertSortMode] = useState<MealSortMode>("name");
 
   const days = useMemo(() => {
     return Array.from({ length: planningHorizonDays }, (_, index) => addDays(calendarStart, index));
@@ -847,6 +854,7 @@ export function PlannerPage() {
     setOpenDayMenuDateKey(null);
 
     setSelectedDay(date);
+    setMealEditorTab("main");
     setMealEditorOpen(true);
   };
 
@@ -1163,8 +1171,73 @@ export function PlannerPage() {
     }, 2000);
   };
 
-  const rankedMainCandidatesForSelectedDay = selectedDayKey ? getRankedMainCandidatesForDate(selectedDayKey) : [];
-  const rankedMainCandidatesById = new Map(rankedMainCandidatesForSelectedDay.map((entry) => [entry.dish.id, entry]));
+  const mealScoresByOptionId = useMemo(() => {
+    const scoreMap = new Map<string, { score: number; appliedRules: AppliedRuleResult[] }>();
+
+    if (!selectedDayKey) {
+      return scoreMap;
+    }
+
+    const dayMetadata = resolvedMetadataForDateKey(selectedDayKey);
+    const previousDishes = getPreviousDishesForDateKey(selectedDayKey);
+
+    const scoreDishOption = (meal: MealOption) => {
+      if (meal.id === "LEFTOVERS") {
+        return;
+      }
+
+      const matchingDish = dishes.find((dish) => dish.id === meal.id);
+      if (!matchingDish) {
+        return;
+      }
+
+      const scoringResult = scoreDishForDay({
+        dish: matchingDish,
+        dayContext: {
+          hasGuests: dayMetadata.hasGuests,
+          personAOfficeNextDay: dayMetadata.personAOfficeNextDay,
+          personBOfficeNextDay: dayMetadata.personBOfficeNextDay,
+        },
+        rules: configuredRules,
+        previousDishes,
+      });
+
+      scoreMap.set(meal.id, {
+        score: scoringResult.score,
+        appliedRules: scoringResult.appliedRules,
+      });
+    };
+
+    mainMealOptions.forEach(scoreDishOption);
+    sideMealOptions.forEach(scoreDishOption);
+    dessertMealOptions.forEach(scoreDishOption);
+
+    return scoreMap;
+  }, [selectedDayKey, dishes, configuredRules, assignedMealsByDate, dayMetadataByDate, defaultOfficeDays, mainMealOptions, sideMealOptions, dessertMealOptions]);
+
+  const sortMealOptions = (options: MealOption[], sortMode: MealSortMode, pinLeftovers: boolean) => {
+    const leftovers = pinLeftovers ? options.filter((meal) => meal.id === "LEFTOVERS") : [];
+    const candidates = pinLeftovers ? options.filter((meal) => meal.id !== "LEFTOVERS") : [...options];
+
+    const sortedCandidates = [...candidates].sort((left, right) => {
+      if (sortMode === "score") {
+        const leftScore = mealScoresByOptionId.get(left.id)?.score ?? Number.NEGATIVE_INFINITY;
+        const rightScore = mealScoresByOptionId.get(right.id)?.score ?? Number.NEGATIVE_INFINITY;
+
+        if (leftScore !== rightScore) {
+          return rightScore - leftScore;
+        }
+      }
+
+      return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+    });
+
+    return [...leftovers, ...sortedCandidates];
+  };
+
+  const sortedMainMealOptions = sortMealOptions(mainMealOptions, mainSortMode, true);
+  const sortedSideMealOptions = sortMealOptions(sideMealOptions, sideSortMode, false);
+  const sortedDessertMealOptions = sortMealOptions(dessertMealOptions, dessertSortMode, false);
   const plannedMealsInViewCount = days.reduce((count, date) => {
     const dateKey = toDateKey(date);
     return count + (hasAnyAssignedMeal(assignedMealsByDate[dateKey]) ? 1 : 0);
@@ -1402,94 +1475,213 @@ export function PlannerPage() {
                   Eating Out
                 </Button>
 
-                <div className="form-section">
-                  <div className="meal-section-title">Main</div>
-                  {mainMealOptions.length === 0 ? (
-                    <div className="state-info">No available main dishes yet.</div>
-                  ) : (
-                    <div className="meal-option-list">
-                      {mainMealOptions.map((meal) => {
-                        const isSelected = editingMeal.main?.id === meal.id;
-                        const rankedEntry = rankedMainCandidatesById.get(meal.id);
-                        const compactLine = meal.id === "LEFTOVERS" ? "Manual only" : rankedEntry ? `Score ${rankedEntry.score} · ${buildCompactViolationSummary(rankedEntry.appliedRules)}` : "Manual only";
-                        const detailsTitle = meal.id === "LEFTOVERS" ? "Leftovers (manual-only, excluded from auto-suggest scoring)" : rankedEntry ? `Score: ${rankedEntry.score}\n${buildRuleSummary(rankedEntry.appliedRules)}` : `${meal.name}\nManual-only or non-auto-suggestable main dish`;
-                        return (
-                          <Button
-                            key={meal.id}
-                            type="button"
-                            variant={isSelected ? "secondary" : "outline"}
-                            className="meal-option-button"
-                            disabled={editingMeal.special !== null}
-                            onClick={() => setMainMeal(meal)}
-                            title={detailsTitle}
-                          >
-                            <span className="meal-option-name">{meal.name}</span>
-                            <span className="meal-option-meta">{compactLine}</span>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-section">
-                  <div className="meal-section-title">Sides (select multiple)</div>
-                  {sideMealOptions.length === 0 ? (
-                    <div className="state-info">No side dishes available.</div>
-                  ) : (
-                    <div className="meal-option-list">
-                      {sideMealOptions.map((meal) => {
-                        const isSelected = editingMeal.sides.some((side) => side.id === meal.id);
-                        return (
-                          <Button
-                            key={meal.id}
-                            type="button"
-                            variant={isSelected ? "secondary" : "outline"}
-                            className="meal-option-button"
-                            disabled={editingMeal.special !== null}
-                            onClick={() => toggleSideMeal(meal)}
-                          >
-                            {meal.name}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-section">
-                  <div className="meal-section-title">Dessert (optional)</div>
+                <div className="meal-editor-tabs" role="tablist" aria-label="Meal sections">
                   <Button
                     type="button"
-                    variant={editingMeal.dessert === null ? "secondary" : "outline"}
-                    className="meal-option-button"
-                    disabled={editingMeal.special !== null}
-                    onClick={() => setDessertMeal(null)}
+                    variant={mealEditorTab === "main" ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setMealEditorTab("main")}
+                    role="tab"
+                    aria-selected={mealEditorTab === "main"}
                   >
-                    No dessert
+                    Main
                   </Button>
-                  {dessertMealOptions.length === 0 ? (
-                    <div className="state-info">No dessert dishes available.</div>
-                  ) : (
-                    <div className="meal-option-list">
-                      {dessertMealOptions.map((meal) => {
-                        const isSelected = editingMeal.dessert?.id === meal.id;
-                        return (
-                          <Button
-                            key={meal.id}
-                            type="button"
-                            variant={isSelected ? "secondary" : "outline"}
-                            className="meal-option-button"
-                            disabled={editingMeal.special !== null}
-                            onClick={() => setDessertMeal(meal)}
-                          >
-                            {meal.name}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <Button
+                    type="button"
+                    variant={mealEditorTab === "sides" ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setMealEditorTab("sides")}
+                    role="tab"
+                    aria-selected={mealEditorTab === "sides"}
+                  >
+                    Sides
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={mealEditorTab === "dessert" ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setMealEditorTab("dessert")}
+                    role="tab"
+                    aria-selected={mealEditorTab === "dessert"}
+                  >
+                    Dessert
+                  </Button>
                 </div>
+
+                {mealEditorTab === "main" && (
+                  <div className="form-section" role="tabpanel">
+                    <div className="form-row-between">
+                      <div className="meal-section-title">Main</div>
+                      <div className="meal-sort-controls">
+                        <Button
+                          type="button"
+                          variant={mainSortMode === "name" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setMainSortMode("name")}
+                        >
+                          Sort: Name
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={mainSortMode === "score" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setMainSortMode("score")}
+                        >
+                          Sort: Score
+                        </Button>
+                      </div>
+                    </div>
+                    {mainMealOptions.length === 0 ? (
+                      <div className="state-info">No available main dishes yet.</div>
+                    ) : (
+                      <div className="meal-option-list">
+                        {sortedMainMealOptions.map((meal) => {
+                          const isSelected = editingMeal.main?.id === meal.id;
+                          const scored = mealScoresByOptionId.get(meal.id);
+                          const compactLine = meal.id === "LEFTOVERS"
+                            ? "Manual only"
+                            : scored
+                              ? `Score ${scored.score} · ${buildCompactViolationSummary(scored.appliedRules)}`
+                              : "Manual only";
+                          const detailsTitle = meal.id === "LEFTOVERS"
+                            ? "Leftovers (manual-only, excluded from auto-suggest scoring)"
+                            : scored
+                              ? `Score: ${scored.score}\n${buildRuleSummary(scored.appliedRules)}`
+                              : `${meal.name}\nManual-only or non-auto-suggestable main dish`;
+
+                          return (
+                            <Button
+                              key={meal.id}
+                              type="button"
+                              variant={isSelected ? "secondary" : "outline"}
+                              className="meal-option-button"
+                              disabled={editingMeal.special !== null}
+                              onClick={() => setMainMeal(meal)}
+                              title={detailsTitle}
+                            >
+                              <span className="meal-option-name">{meal.name}</span>
+                              <span className="meal-option-meta">{compactLine}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {mealEditorTab === "sides" && (
+                  <div className="form-section" role="tabpanel">
+                    <div className="form-row-between">
+                      <div className="meal-section-title">Sides (select multiple)</div>
+                      <div className="meal-sort-controls">
+                        <Button
+                          type="button"
+                          variant={sideSortMode === "name" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setSideSortMode("name")}
+                        >
+                          Sort: Name
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={sideSortMode === "score" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setSideSortMode("score")}
+                        >
+                          Sort: Score
+                        </Button>
+                      </div>
+                    </div>
+                    {sideMealOptions.length === 0 ? (
+                      <div className="state-info">No side dishes available.</div>
+                    ) : (
+                      <div className="meal-option-list">
+                        {sortedSideMealOptions.map((meal) => {
+                          const isSelected = editingMeal.sides.some((side) => side.id === meal.id);
+                          const scored = mealScoresByOptionId.get(meal.id);
+                          const scoreLabel = scored ? `Score ${scored.score}` : "Manual only";
+
+                          return (
+                            <Button
+                              key={meal.id}
+                              type="button"
+                              variant={isSelected ? "secondary" : "outline"}
+                              className="meal-option-button"
+                              disabled={editingMeal.special !== null}
+                              onClick={() => toggleSideMeal(meal)}
+                              title={scored ? `Score: ${scored.score}\n${buildRuleSummary(scored.appliedRules)}` : `${meal.name}\nManual-only dish`}
+                            >
+                              <span className="meal-option-name">{meal.name}</span>
+                              <span className="meal-option-meta">{scoreLabel}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {mealEditorTab === "dessert" && (
+                  <div className="form-section" role="tabpanel">
+                    <div className="form-row-between">
+                      <div className="meal-section-title">Dessert (optional)</div>
+                      <div className="meal-sort-controls">
+                        <Button
+                          type="button"
+                          variant={dessertSortMode === "name" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setDessertSortMode("name")}
+                        >
+                          Sort: Name
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={dessertSortMode === "score" ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setDessertSortMode("score")}
+                        >
+                          Sort: Score
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant={editingMeal.dessert === null ? "secondary" : "outline"}
+                      className="meal-option-button"
+                      disabled={editingMeal.special !== null}
+                      onClick={() => setDessertMeal(null)}
+                    >
+                      No dessert
+                    </Button>
+                    {dessertMealOptions.length === 0 ? (
+                      <div className="state-info">No dessert dishes available.</div>
+                    ) : (
+                      <div className="meal-option-list">
+                        {sortedDessertMealOptions.map((meal) => {
+                          const isSelected = editingMeal.dessert?.id === meal.id;
+                          const scored = mealScoresByOptionId.get(meal.id);
+                          const scoreLabel = scored ? `Score ${scored.score}` : "Manual only";
+
+                          return (
+                            <Button
+                              key={meal.id}
+                              type="button"
+                              variant={isSelected ? "secondary" : "outline"}
+                              className="meal-option-button"
+                              disabled={editingMeal.special !== null}
+                              onClick={() => setDessertMeal(meal)}
+                              title={scored ? `Score: ${scored.score}\n${buildRuleSummary(scored.appliedRules)}` : `${meal.name}\nManual-only dish`}
+                            >
+                              <span className="meal-option-name">{meal.name}</span>
+                              <span className="meal-option-meta">{scoreLabel}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="form-actions">
                   <Button type="button" variant="outline" onClick={() => setMealEditorOpen(false)} disabled={busyAction === "meal"}>

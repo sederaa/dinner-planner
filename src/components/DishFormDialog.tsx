@@ -194,12 +194,14 @@ export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes =
         <DialogHeader>
           <DialogTitle>{dish ? "Edit Dish" : "Add New Dish"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="form-stack">
+        <form onSubmit={handleSubmit} className="form-stack" autoComplete="off">
           {/* Name */}
           <div className="form-section">
             <Label htmlFor="name">Dish Name *</Label>
             <Input
               id="name"
+              name="dishName"
+              autoComplete="off"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -228,6 +230,8 @@ export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes =
             <div className="inline-group">
               <Input
                 id="protein"
+                name="proteinInput"
+                autoComplete="off"
                 value={proteinInput}
                 onChange={(e) => setProteinInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addProtein())}
@@ -267,6 +271,8 @@ export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes =
             <div className="inline-group">
               <Input
                 id="ingredient"
+                name="ingredientInput"
+                autoComplete="off"
                 value={ingredientInput}
                 onChange={(e) => setIngredientInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addIngredient())}
@@ -303,24 +309,33 @@ export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes =
                 </span>
               ))}
             </div>
+
+            <div className="inline-group-item">
+              <Checkbox id="isSpicy" checked={formData.isSpicy} onCheckedChange={(checked) => setFormData({ ...formData, isSpicy: checked === true })} />
+              <label htmlFor="isSpicy" className="form-inline-label">
+                🌶️ This dish is spicy
+              </label>
+            </div>
           </div>
 
-          {/* Time & Spicy */}
+          {/* Time & Status */}
           <div className={dish ? "form-grid-two" : "form-grid-one"}>
             <div className="form-section">
-              <Label htmlFor="time">Time & Difficulty *</Label>
-              <Select value={formData.time} onValueChange={(value: DishTime) => setFormData({ ...formData, time: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DISH_TIMES.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Time & Difficulty *</Label>
+              <div className="inline-group">
+                {DISH_TIMES.map((time) => (
+                  <label key={time} className="chip-toggle">
+                    <input
+                      type="radio"
+                      name="dish-time"
+                      value={time}
+                      checked={formData.time === time}
+                      onChange={() => setFormData({ ...formData, time })}
+                    />
+                    {time}
+                  </label>
+                ))}
+              </div>
             </div>
             {dish && (
               <div className="form-section">
@@ -341,19 +356,13 @@ export function DishFormDialog({ open, onClose, onSubmit, dish, existingDishes =
             )}
           </div>
 
-          {/* Spicy checkbox */}
-          <div className="inline-group-item">
-            <Checkbox id="isSpicy" checked={formData.isSpicy} onCheckedChange={(checked) => setFormData({ ...formData, isSpicy: checked === true })} />
-            <label htmlFor="isSpicy" className="form-inline-label">
-              🌶️ This dish is spicy
-            </label>
-          </div>
-
           {/* Notes */}
           <div className="form-section">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
+              name="dishNotes"
+              autoComplete="off"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Any additional notes or cooking tips..."
