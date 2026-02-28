@@ -10,14 +10,9 @@ A React + TypeScript web application for planning weekly/bi-weekly dinner menus 
 - nvm (Node Version Manager)
 - Supabase account with project configured
 
-### Environment Variables
+### Supabase Configuration
 
-Create a `.env` file in the project root:
-
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-```
+Supabase client configuration is currently inlined in [src/lib/supabase.ts](src/lib/supabase.ts), so no `.env` file is required for local development.
 
 ### Starting the Development Server
 

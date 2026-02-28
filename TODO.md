@@ -10,7 +10,7 @@
 - [x] Set up React + TypeScript + Vite + TailwindCSS
 - [x] Install and configure shadcn/ui
 - [x] Define TypeScript types/interfaces
-- [x] Connect to Supabase client (configured, needs .env)
+- [x] Connect to Supabase client (configured)
 - [x] Set up Supabase project and create all tables
 - [x] Basic routing and layout structure
 
