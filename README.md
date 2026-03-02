@@ -141,3 +141,5 @@ export default defineConfig([
   },
 ]);
 ```
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
