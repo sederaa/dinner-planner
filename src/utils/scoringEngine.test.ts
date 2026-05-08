@@ -59,7 +59,7 @@ describe("evaluateNoFishBeforeOfficeDays", () => {
   it("applies penalty when fish dish is planned before office day", () => {
     const result = evaluateNoFishBeforeOfficeDays(
       fishDish,
-      { personAOfficeNextDay: true, personBOfficeNextDay: false },
+      { sebOfficeNextDay: true, sherryOfficeNextDay: false },
       baseRule
     );
 
@@ -70,7 +70,7 @@ describe("evaluateNoFishBeforeOfficeDays", () => {
   it("does not apply penalty when no one goes to office next day", () => {
     const result = evaluateNoFishBeforeOfficeDays(
       fishDish,
-      { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       baseRule
     );
 
@@ -81,7 +81,7 @@ describe("evaluateNoFishBeforeOfficeDays", () => {
   it("does not apply penalty for non-fish dishes", () => {
     const result = evaluateNoFishBeforeOfficeDays(
       chickenDish,
-      { personAOfficeNextDay: true, personBOfficeNextDay: true },
+      { sebOfficeNextDay: true, sherryOfficeNextDay: true },
       baseRule
     );
 
@@ -98,7 +98,7 @@ describe("evaluateNoFishBeforeOfficeDays", () => {
 
     const result = evaluateNoFishBeforeOfficeDays(
       leftoversFishDish,
-      { personAOfficeNextDay: true, personBOfficeNextDay: true },
+      { sebOfficeNextDay: true, sherryOfficeNextDay: true },
       baseRule
     );
 
@@ -114,7 +114,7 @@ describe("evaluateNoFishBeforeOfficeDays", () => {
 
     const result = evaluateNoFishBeforeOfficeDays(
       fishDish,
-      { personAOfficeNextDay: false, personBOfficeNextDay: true },
+      { sebOfficeNextDay: false, sherryOfficeNextDay: true },
       ruleWithoutPoints
     );
 
@@ -127,7 +127,7 @@ describe("scoreDishForDay", () => {
   it("adds rule deltas to base score", () => {
     const result = scoreDishForDay({
       dish: fishDish,
-      dayContext: { personAOfficeNextDay: true, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: true, sherryOfficeNextDay: false },
       rules: [baseRule],
       baseScore: 100,
     });
@@ -157,7 +157,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: spicyDish,
-      dayContext: { hasGuests: true, personAOfficeNextDay: true, personBOfficeNextDay: true },
+      dayContext: { hasGuests: true, sebOfficeNextDay: true, sherryOfficeNextDay: true },
       rules,
       baseScore: 100,
     });
@@ -179,7 +179,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: easyBeefDish,
-      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules: [prioritizeRule],
       baseScore: 100,
     });
@@ -211,7 +211,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: chickenDish,
-      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules,
       previousDishes: [
         {
@@ -244,7 +244,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: chickenDish,
-      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules,
       previousDishes: [
         {
@@ -274,7 +274,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: chickenDish,
-      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules,
       previousDishes: [
         fishDish,
@@ -305,7 +305,7 @@ describe("scoreDishForDay", () => {
 
     const result = scoreDishForDay({
       dish: spicyDish,
-      dayContext: { hasGuests: true, personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { hasGuests: true, sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules,
       baseScore: 100,
     });
@@ -333,7 +333,7 @@ describe("rankDishesForDay", () => {
 
     const ranked = rankDishesForDay({
       dishes: [fishDish, easyBeefDish, chickenDish],
-      dayContext: { personAOfficeNextDay: true, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: true, sherryOfficeNextDay: false },
       rules,
       previousDishes: [],
       baseScore: 100,
@@ -359,7 +359,7 @@ describe("rankDishesForDay", () => {
 
     const ranked = rankDishesForDay({
       dishes: [zetaDish, alphaDish],
-      dayContext: { personAOfficeNextDay: false, personBOfficeNextDay: false },
+      dayContext: { sebOfficeNextDay: false, sherryOfficeNextDay: false },
       rules: [],
       baseScore: 100,
     });

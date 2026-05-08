@@ -7,8 +7,8 @@ export interface MealPlan {
   sideDishIds: string[]; // Array of side dish IDs (no maximum)
   dessertDishId?: string; // Optional dessert
   hasGuests: boolean;
-  personAGoesToOffice: boolean; // Next day
-  personBGoesToOffice: boolean; // Next day
+  sebGoesToOffice: boolean; // Next day
+  sherryGoesToOffice: boolean; // Next day
   locked: boolean; // If true, auto-suggest won't replace this day
   isBlocked: boolean; // If true, day is intentionally kept clear (no cooking)
   notes?: string;
@@ -22,8 +22,8 @@ export interface MealPlanFormData {
   sideDishIds: string[];
   dessertDishId?: string;
   hasGuests: boolean;
-  personAGoesToOffice: boolean;
-  personBGoesToOffice: boolean;
+  sebGoesToOffice: boolean;
+  sherryGoesToOffice: boolean;
   locked: boolean;
   isBlocked: boolean;
   notes?: string;

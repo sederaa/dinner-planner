@@ -39,8 +39,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 export function SettingsPage() {
   const [settingsRowId, setSettingsRowId] = useState<string | null>(null);
   const [planningHorizonDays, setPlanningHorizonDays] = useState<number>(DEFAULT_SETTINGS.planningHorizonDays);
-  const [personAOfficeDays, setPersonAOfficeDays] = useState<DayOfWeek[]>(DEFAULT_SETTINGS.defaultOfficeDays.personA);
-  const [personBOfficeDays, setPersonBOfficeDays] = useState<DayOfWeek[]>(DEFAULT_SETTINGS.defaultOfficeDays.personB);
+  const [sebOfficeDays, setSebOfficeDays] = useState<DayOfWeek[]>(DEFAULT_SETTINGS.defaultOfficeDays.seb);
+  const [sherryOfficeDays, setSherryOfficeDays] = useState<DayOfWeek[]>(DEFAULT_SETTINGS.defaultOfficeDays.sherry);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,8 +57,8 @@ export function SettingsPage() {
 
         setSettingsRowId((data?.id as string | undefined) || null);
         setPlanningHorizonDays(data?.planning_horizon_days === 7 ? 7 : 14);
-        setPersonAOfficeDays(normalizeDays(data?.default_office_days?.personA, DEFAULT_SETTINGS.defaultOfficeDays.personA));
-        setPersonBOfficeDays(normalizeDays(data?.default_office_days?.personB, DEFAULT_SETTINGS.defaultOfficeDays.personB));
+        setSebOfficeDays(normalizeDays(data?.default_office_days?.seb, DEFAULT_SETTINGS.defaultOfficeDays.seb));
+        setSherryOfficeDays(normalizeDays(data?.default_office_days?.sherry, DEFAULT_SETTINGS.defaultOfficeDays.sherry));
       } catch (loadError) {
         console.error("Error loading settings:", loadError);
         setErrorMessage(getErrorMessage(loadError, "Failed to load settings. Defaults are shown."));
@@ -70,7 +70,7 @@ export function SettingsPage() {
     loadSettings();
   }, []);
 
-  const toggleOfficeDay = (person: "A" | "B", day: DayOfWeek) => {
+  const toggleOfficeDay = (person: "seb" | "sherry", day: DayOfWeek) => {
     const update = (current: DayOfWeek[]) => {
       if (current.includes(day)) {
         return current.filter((entry) => entry !== day);
@@ -79,12 +79,12 @@ export function SettingsPage() {
       return [...current, day];
     };
 
-    if (person === "A") {
-      setPersonAOfficeDays((current) => update(current));
+    if (person === "seb") {
+      setSebOfficeDays((current) => update(current));
       return;
     }
 
-    setPersonBOfficeDays((current) => update(current));
+    setSherryOfficeDays((current) => update(current));
   };
 
   const saveSettings = async () => {
@@ -95,8 +95,8 @@ export function SettingsPage() {
     const payload = {
       planning_horizon_days: planningHorizonDays,
       default_office_days: {
-        personA: personAOfficeDays,
-        personB: personBOfficeDays,
+        seb: sebOfficeDays,
+        sherry: sherryOfficeDays,
       },
     };
 
@@ -161,11 +161,11 @@ export function SettingsPage() {
                 <div className="strong-label">Default Office Days (Next Day)</div>
 
                 <div className="form-section">
-                  <div className="muted-text">Person A</div>
+                  <div className="muted-text">Seb</div>
                   <div className="day-grid">
                     {WEEKDAY_OPTIONS.map((day) => (
-                      <label key={`person-a-${day.key}`} className="chip-toggle">
-                        <Checkbox checked={personAOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("A", day.key)} />
+                      <label key={`seb-${day.key}`} className="chip-toggle">
+                        <Checkbox checked={sebOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("seb", day.key)} />
                         {day.label}
                       </label>
                     ))}
@@ -173,11 +173,11 @@ export function SettingsPage() {
                 </div>
 
                 <div className="form-section">
-                  <div className="muted-text">Person B</div>
+                  <div className="muted-text">Sherry</div>
                   <div className="day-grid">
                     {WEEKDAY_OPTIONS.map((day) => (
-                      <label key={`person-b-${day.key}`} className="chip-toggle">
-                        <Checkbox checked={personBOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("B", day.key)} />
+                      <label key={`sherry-${day.key}`} className="chip-toggle">
+                        <Checkbox checked={sherryOfficeDays.includes(day.key)} onCheckedChange={() => toggleOfficeDay("sherry", day.key)} />
                         {day.label}
                       </label>
                     ))}

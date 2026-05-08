@@ -29,8 +29,8 @@ export interface MealPlan {
   sideDishIds: string[]; // Array of side dish IDs (no maximum)
   dessertDishId?: string;
   hasGuests: boolean;
-  personAGoesToOffice: boolean; // Next day
-  personBGoesToOffice: boolean; // Next day
+  sebGoesToOffice: boolean; // Next day
+  sherryGoesToOffice: boolean; // Next day
   locked: boolean; // If true, auto-suggest won't replace this day
   isBlocked: boolean; // If true, day is intentionally kept clear (no cooking)
   notes?: string;
@@ -61,8 +61,8 @@ export type Rule = {
 export interface UserSettings {
   planningHorizonDays: number; // 7, 14, etc. (default: 14)
   defaultOfficeDays: {
-    personA: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
-    personB: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
+    seb: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
+    sherry: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
   };
 }
 
@@ -107,7 +107,7 @@ export interface Database {
         };
         Insert: Omit<
           MealPlan,
-          "id" | "date" | "mainDishId" | "sideDishIds" | "dessertDishId" | "hasGuests" | "personAGoesToOffice" | "personBGoesToOffice" | "isBlocked"
+          "id" | "date" | "mainDishId" | "sideDishIds" | "dessertDishId" | "hasGuests" | "sebGoesToOffice" | "sherryGoesToOffice" | "isBlocked"
         > & {
           id?: string;
           date: string;
@@ -144,8 +144,8 @@ export interface Database {
           id: string;
           planning_horizon_days: number;
           default_office_days: {
-            personA: string[];
-            personB: string[];
+            seb: string[];
+            sherry: string[];
           };
           updated_at: string;
         };
@@ -153,8 +153,8 @@ export interface Database {
           id?: string;
           planning_horizon_days?: number;
           default_office_days?: {
-            personA: string[];
-            personB: string[];
+            seb: string[];
+            sherry: string[];
           };
         };
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;

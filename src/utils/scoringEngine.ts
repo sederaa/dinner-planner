@@ -2,8 +2,8 @@ import type { Dish } from "../types/dish";
 import type { Rule } from "../types/rule";
 
 export type DayRuleContext = {
-  personAOfficeNextDay: boolean;
-  personBOfficeNextDay: boolean;
+  sebOfficeNextDay: boolean;
+  sherryOfficeNextDay: boolean;
   hasGuests?: boolean;
 };
 
@@ -90,7 +90,7 @@ export const evaluateNoFishBeforeOfficeDays = (
     };
   }
 
-  const officeNextDay = dayContext.personAOfficeNextDay || dayContext.personBOfficeNextDay;
+  const officeNextDay = dayContext.sebOfficeNextDay || dayContext.sherryOfficeNextDay;
   if (!officeNextDay || !hasFishProtein(dish)) {
     return {
       ruleType: rule.type,
@@ -221,7 +221,7 @@ const evaluatePreferEasyOnDualOfficeDays = (
     };
   }
 
-  const dualOfficeDay = dayContext.personAOfficeNextDay && dayContext.personBOfficeNextDay;
+  const dualOfficeDay = dayContext.sebOfficeNextDay && dayContext.sherryOfficeNextDay;
   if (!dualOfficeDay || isLowTimeDish(dish)) {
     return {
       ruleType: rule.type,

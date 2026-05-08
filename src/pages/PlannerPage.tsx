@@ -38,18 +38,18 @@ type MealPlanInsert = Database["public"]["Tables"]["meal_plans"]["Insert"];
 
 type DayMetadata = {
   hasGuests: boolean;
-  personAOfficeNextDay: boolean;
-  personBOfficeNextDay: boolean;
+  sebOfficeNextDay: boolean;
+  sherryOfficeNextDay: boolean;
 };
 
 type DefaultOfficeDays = {
-  personA: string[];
-  personB: string[];
+  seb: string[];
+  sherry: string[];
 };
 
 const FALLBACK_DEFAULT_OFFICE_DAYS: DefaultOfficeDays = {
-  personA: ["monday", "tuesday", "wednesday", "thursday"],
-  personB: ["monday", "tuesday", "wednesday", "thursday"],
+  seb: ["monday", "tuesday", "wednesday", "thursday"],
+  sherry: ["monday", "tuesday", "wednesday", "thursday"],
 };
 
 const FALLBACK_PLANNING_HORIZON_DAYS = 14;
@@ -126,8 +126,8 @@ export function PlannerPage() {
   const [dayEditorDate, setDayEditorDate] = useState<Date | null>(null);
   const [editingDayMetadata, setEditingDayMetadata] = useState<DayMetadata>({
     hasGuests: false,
-    personAOfficeNextDay: true,
-    personBOfficeNextDay: true,
+    sebOfficeNextDay: true,
+    sherryOfficeNextDay: true,
   });
   const [mealPlansLoaded, setMealPlansLoaded] = useState(false);
   const [plannerLoading, setPlannerLoading] = useState(true);
@@ -230,7 +230,7 @@ export function PlannerPage() {
   };
 
   const normalizeOfficeDays = (input: unknown): DefaultOfficeDays => {
-    const payload = (input as { personA?: unknown; personB?: unknown } | null) || null;
+    const payload = (input as { seb?: unknown; sherry?: unknown } | null) || null;
     const normalizeList = (value: unknown, fallback: string[]) => {
       if (!Array.isArray(value)) return fallback;
       const normalized = value
@@ -240,8 +240,8 @@ export function PlannerPage() {
     };
 
     return {
-      personA: normalizeList(payload?.personA, FALLBACK_DEFAULT_OFFICE_DAYS.personA),
-      personB: normalizeList(payload?.personB, FALLBACK_DEFAULT_OFFICE_DAYS.personB),
+      seb: normalizeList(payload?.seb, FALLBACK_DEFAULT_OFFICE_DAYS.seb),
+      sherry: normalizeList(payload?.sherry, FALLBACK_DEFAULT_OFFICE_DAYS.sherry),
     };
   };
 
@@ -254,8 +254,8 @@ export function PlannerPage() {
     const weekdayKey = weekdayKeyFromDate(date);
     return {
       hasGuests: false,
-      personAOfficeNextDay: defaultOfficeDays.personA.includes(weekdayKey),
-      personBOfficeNextDay: defaultOfficeDays.personB.includes(weekdayKey),
+      sebOfficeNextDay: defaultOfficeDays.seb.includes(weekdayKey),
+      sherryOfficeNextDay: defaultOfficeDays.sherry.includes(weekdayKey),
     };
   };
 
@@ -274,8 +274,8 @@ export function PlannerPage() {
     const defaults = defaultMetadataForDate(date);
     return (
       metadata.hasGuests !== defaults.hasGuests ||
-      metadata.personAOfficeNextDay !== defaults.personAOfficeNextDay ||
-      metadata.personBOfficeNextDay !== defaults.personBOfficeNextDay
+      metadata.sebOfficeNextDay !== defaults.sebOfficeNextDay ||
+      metadata.sherryOfficeNextDay !== defaults.sherryOfficeNextDay
     );
   };
 
@@ -389,8 +389,8 @@ export function PlannerPage() {
       dish,
       dayContext: {
         hasGuests: metadata.hasGuests,
-        personAOfficeNextDay: metadata.personAOfficeNextDay,
-        personBOfficeNextDay: metadata.personBOfficeNextDay,
+        sebOfficeNextDay: metadata.sebOfficeNextDay,
+        sherryOfficeNextDay: metadata.sherryOfficeNextDay,
       },
       rules: configuredRules,
       previousDishes: getPreviousDishesForDateKey(dateKey),
@@ -456,8 +456,8 @@ export function PlannerPage() {
           nextLockedDays[row.date] = Boolean(row.locked);
           nextDayMetadata[row.date] = {
             hasGuests: Boolean(row.has_guests),
-            personAOfficeNextDay: Boolean(row.person_a_office_next_day),
-            personBOfficeNextDay: Boolean(row.person_b_office_next_day),
+            sebOfficeNextDay: Boolean(row.person_a_office_next_day),
+            sherryOfficeNextDay: Boolean(row.person_b_office_next_day),
           };
         });
 
@@ -508,8 +508,8 @@ export function PlannerPage() {
       side_dish_ids: isEatingOut ? [] : meal.sides.map((side) => side.id),
       dessert_dish_id: isEatingOut || !meal.dessert ? null : meal.dessert.id,
       has_guests: metadata.hasGuests,
-      person_a_office_next_day: metadata.personAOfficeNextDay,
-      person_b_office_next_day: metadata.personBOfficeNextDay,
+      person_a_office_next_day: metadata.sebOfficeNextDay,
+      person_b_office_next_day: metadata.sherryOfficeNextDay,
       locked: isLocked,
     };
 
@@ -529,8 +529,8 @@ export function PlannerPage() {
       const payload: MealPlanInsert = {
         date: dateKey,
         has_guests: metadata.hasGuests,
-        person_a_office_next_day: metadata.personAOfficeNextDay,
-        person_b_office_next_day: metadata.personBOfficeNextDay,
+        person_a_office_next_day: metadata.sebOfficeNextDay,
+        person_b_office_next_day: metadata.sherryOfficeNextDay,
         locked: true,
       };
       const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -548,8 +548,8 @@ export function PlannerPage() {
     const payload: MealPlanInsert = {
       date: dateKey,
       has_guests: metadata.hasGuests,
-      person_a_office_next_day: metadata.personAOfficeNextDay,
-      person_b_office_next_day: metadata.personBOfficeNextDay,
+      person_a_office_next_day: metadata.sebOfficeNextDay,
+      person_b_office_next_day: metadata.sherryOfficeNextDay,
       locked: false,
     };
     const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -607,8 +607,8 @@ export function PlannerPage() {
       dishes: autoSuggestableMainDishes,
       dayContext: {
         hasGuests: metadata.hasGuests,
-        personAOfficeNextDay: metadata.personAOfficeNextDay,
-        personBOfficeNextDay: metadata.personBOfficeNextDay,
+        sebOfficeNextDay: metadata.sebOfficeNextDay,
+        sherryOfficeNextDay: metadata.sherryOfficeNextDay,
       },
       rules: configuredRules,
       previousDishes: getPreviousDishesForDateKey(dateKey, assignmentOverrides),
@@ -820,8 +820,8 @@ export function PlannerPage() {
     const payload: MealPlanInsert = {
       date: dateKey,
       has_guests: metadata.hasGuests,
-      person_a_office_next_day: metadata.personAOfficeNextDay,
-      person_b_office_next_day: metadata.personBOfficeNextDay,
+      person_a_office_next_day: metadata.sebOfficeNextDay,
+      person_b_office_next_day: metadata.sherryOfficeNextDay,
       locked: isLocked,
     };
 
@@ -893,8 +893,8 @@ export function PlannerPage() {
             side_dish_ids: [],
             dessert_dish_id: null,
             has_guests: metadata.hasGuests,
-            person_a_office_next_day: metadata.personAOfficeNextDay,
-            person_b_office_next_day: metadata.personBOfficeNextDay,
+            person_a_office_next_day: metadata.sebOfficeNextDay,
+            person_b_office_next_day: metadata.sherryOfficeNextDay,
             locked: isLocked,
           };
           const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -932,8 +932,8 @@ export function PlannerPage() {
         side_dish_ids: [],
         dessert_dish_id: null,
         has_guests: metadata.hasGuests,
-        person_a_office_next_day: metadata.personAOfficeNextDay,
-        person_b_office_next_day: metadata.personBOfficeNextDay,
+        person_a_office_next_day: metadata.sebOfficeNextDay,
+        person_b_office_next_day: metadata.sherryOfficeNextDay,
         locked: true,
       };
       const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -949,8 +949,8 @@ export function PlannerPage() {
         side_dish_ids: [],
         dessert_dish_id: null,
         has_guests: metadata.hasGuests,
-        person_a_office_next_day: metadata.personAOfficeNextDay,
-        person_b_office_next_day: metadata.personBOfficeNextDay,
+        person_a_office_next_day: metadata.sebOfficeNextDay,
+        person_b_office_next_day: metadata.sherryOfficeNextDay,
         locked: false,
       };
       const { error } = await (supabase as any).from("meal_plans").upsert(payload, { onConflict: "date" });
@@ -1089,8 +1089,8 @@ export function PlannerPage() {
         }
 
         const officePeople: string[] = [];
-        if (metadata.personAOfficeNextDay) officePeople.push("A");
-        if (metadata.personBOfficeNextDay) officePeople.push("B");
+        if (metadata.sebOfficeNextDay) officePeople.push("Seb");
+        if (metadata.sherryOfficeNextDay) officePeople.push("Sherry");
         if (officePeople.length > 0) {
           dayFlags.push(`Office: ${officePeople.join(", ")}`);
         }
@@ -1195,8 +1195,8 @@ export function PlannerPage() {
         dish: matchingDish,
         dayContext: {
           hasGuests: dayMetadata.hasGuests,
-          personAOfficeNextDay: dayMetadata.personAOfficeNextDay,
-          personBOfficeNextDay: dayMetadata.personBOfficeNextDay,
+          sebOfficeNextDay: dayMetadata.sebOfficeNextDay,
+          sherryOfficeNextDay: dayMetadata.sherryOfficeNextDay,
         },
         rules: configuredRules,
         previousDishes,
@@ -1396,10 +1396,10 @@ export function PlannerPage() {
                         </div>
                       </div>
                     </div>
-                    {(dayMetadata.hasGuests || dayMetadata.personAOfficeNextDay || dayMetadata.personBOfficeNextDay || isLocked) && (
+                    {(dayMetadata.hasGuests || dayMetadata.sebOfficeNextDay || dayMetadata.sherryOfficeNextDay || isLocked) && (
                       <div className="planner-day-flags">
-                        {dayMetadata.personAOfficeNextDay && <span title="Person A goes to office the next day">🏢A</span>}
-                        {dayMetadata.personBOfficeNextDay && <span title="Person B goes to office the next day">🏢B</span>}
+                        {dayMetadata.sebOfficeNextDay && <span title="Seb goes to office the next day">🏢Seb</span>}
+                        {dayMetadata.sherryOfficeNextDay && <span title="Sherry goes to office the next day">🏢Sherry</span>}
                         {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
                         {isLocked && <span title="This day is locked from auto-suggest">🔒</span>}
                       </div>
@@ -1717,17 +1717,17 @@ export function PlannerPage() {
             <div className="flex gap-4">
               <label className="inline-flex items-center text-sm gap-2">
                 <Checkbox
-                  checked={editingDayMetadata.personAOfficeNextDay}
-                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personAOfficeNextDay: checked === true }))}
+                  checked={editingDayMetadata.sebOfficeNextDay}
+                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, sebOfficeNextDay: checked === true }))}
                 />
-                Person A
+                Seb
               </label>
               <label className="inline-flex items-center text-sm gap-2">
                 <Checkbox
-                  checked={editingDayMetadata.personBOfficeNextDay}
-                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, personBOfficeNextDay: checked === true }))}
+                  checked={editingDayMetadata.sherryOfficeNextDay}
+                  onCheckedChange={(checked) => setEditingDayMetadata((prev) => ({ ...prev, sherryOfficeNextDay: checked === true }))}
                 />
-                Person B
+                Sherry
               </label>
             </div>
 

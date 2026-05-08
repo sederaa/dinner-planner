@@ -40,8 +40,8 @@ A web-based application to help a family plan dinners for 1-2 weeks ahead based 
   sideDishIds: string[]; // Array of side dish IDs (no maximum)
   dessertDishId?: string; // Optional dessert
   hasGuests: boolean;
-  personAGoesToOffice: boolean; // Next day
-  personBGoesToOffice: boolean; // Next day
+  sebGoesToOffice: boolean; // Next day
+  sherryGoesToOffice: boolean; // Next day
   locked: boolean; // If true, auto-suggest won't replace this day
   notes?: string;
 }
@@ -75,8 +75,8 @@ type Rule = {
 {
   planningHorizonDays: number; // 7, 14, etc. (default: 14)
   defaultOfficeDays: {
-    personA: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
-    personB: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
+    seb: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
+    sherry: string[]; // ["monday", "tuesday", "wednesday", "thursday"]
   }
 }
 // Note: Week always starts on Monday. Family has 2 adults + kids (kids not tracked separately).
@@ -108,7 +108,7 @@ type Rule = {
 - Keep **Edit Meal** focused on meal selection only (main + sides + dessert), without day metadata controls
 - In **Edit Meal**, show ranked main dish candidates inline for all mains, including score and compact violation summary
 - Show full per-rule breakdown for each main option via title tooltip (title attribute) for debugging and transparency
-- Show day icons only when enabled (e.g., 👥, 🏢A, 🏢B)
+- Show day icons only when enabled (e.g., 👥, 🏢Seb, 🏢Sherry)
 - Visual indicators for rule violations
 - Export meal plan to clipboard in simple text format
 - **Special dishes**: "Leftovers" and "Eating Out" can be dragged onto days
@@ -288,7 +288,7 @@ not just protein (e.g., zucchini, tomatoes, etc.)
    - Modal/drawer opens with dish list (filterable by type)
    - Drag or click to add: Main dish → Side dishes → Dessert
    - Dragging dishes onto a day always adds to existing dishes (never replaces)
-   - Use each day's `⋯` context menu to toggle: Guests coming, Person A office next day, Person B office next day
+   - Use each day's `⋯` context menu to toggle: Guests coming, Seb office next day, Sherry office next day
      - Office days are pre-populated from `defaultOfficeDays` settings, and can be overridden per day
    - `Clear meal` is available in the same `⋯` context menu
    - Meal appears on calendar, shows any rule violations
@@ -411,7 +411,7 @@ CREATE TABLE rules_config (
 CREATE TABLE user_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   planning_horizon_days INTEGER DEFAULT 14,
-  default_office_days JSONB, -- {"personA": ["monday", "tuesday", "wednesday", "thursday"], "personB": [...]}
+  default_office_days JSONB, -- {"seb": ["monday", "tuesday", "wednesday", "thursday"], "sherry": [...]}
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -522,7 +522,7 @@ docker run -d -p 8080:80 --name dinner-planner \
 
 Based on user feedback:
 
-- **Family composition**: 2 adults (Person A & B) + kids (kids not separately tracked)
+- **Family composition**: 2 adults (Seb & B) + kids (kids not separately tracked)
 - **Portion sizes**: Always assumed sufficient for leftovers - no tracking needed
 - **Dietary restrictions**: None at this time
 - **Meal types**: Dinner only (lunch/breakfast out of scope)

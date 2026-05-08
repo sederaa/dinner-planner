@@ -26,8 +26,8 @@ const mockData = vi.hoisted(() => {
     userSettings: {
       planning_horizon_days: 14,
       default_office_days: {
-        personA: ["monday", "tuesday", "wednesday", "thursday"],
-        personB: ["monday", "tuesday", "wednesday", "thursday"],
+        seb: ["monday", "tuesday", "wednesday", "thursday"],
+        sherry: ["monday", "tuesday", "wednesday", "thursday"],
       },
     },
     dishes: [
@@ -145,8 +145,8 @@ describe("PlannerPage", () => {
     mockData.userSettings = {
       planning_horizon_days: 14,
       default_office_days: {
-        personA: ["monday", "tuesday", "wednesday", "thursday"],
-        personB: ["monday", "tuesday", "wednesday", "thursday"],
+        seb: ["monday", "tuesday", "wednesday", "thursday"],
+        sherry: ["monday", "tuesday", "wednesday", "thursday"],
       },
     };
 
