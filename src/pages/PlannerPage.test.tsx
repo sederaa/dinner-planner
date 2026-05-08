@@ -292,7 +292,7 @@ describe("PlannerPage", () => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Plan: Unplanned Only" }));
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "Change" }).length).toBeGreaterThan(0);
@@ -310,7 +310,8 @@ describe("PlannerPage", () => {
 
     const selectionCheckboxes = screen.getAllByRole("checkbox", { name: /Select /i });
     fireEvent.click(selectionCheckboxes[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest Selected" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Open Auto-Plan mode options" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Selected Days" }));
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(13);
@@ -359,7 +360,8 @@ describe("PlannerPage", () => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(14);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Open Auto-Plan mode options" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "All Days" }));
 
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(1);
@@ -397,10 +399,80 @@ describe("PlannerPage", () => {
       expect(screen.getAllByRole("button", { name: "+ Add meal" }).length).toBe(14);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Auto-Suggest All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Plan: Unplanned Only" }));
 
     await waitFor(() => {
       expect(screen.getByText("No enabled main dishes available")).toBeInTheDocument();
+    });
+  });
+
+  it("auto-plan unplanned only does not overwrite days with main or special", async () => {
+    const mondayKey = getMondayDateKey();
+    const tuesday = new Date(`${mondayKey}T00:00:00`);
+    tuesday.setDate(tuesday.getDate() + 1);
+    const tuesdayKey = `${tuesday.getFullYear()}-${String(tuesday.getMonth() + 1).padStart(2, "0")}-${String(tuesday.getDate()).padStart(2, "0")}`;
+    mockData.dishes = [
+      ...mockData.dishes,
+      {
+        id: "dish-manual-existing",
+        name: "Manual Existing",
+        course: ["main"],
+        proteins: ["chicken"],
+        isSpicy: false,
+        time: "low",
+        keyIngredients: ["chicken"],
+        status: "manual_only",
+      },
+    ];
+
+    mockData.mealPlanRows = [
+      {
+        id: "existing-main",
+        date: mondayKey,
+        main_dish_id: "dish-manual-existing",
+        main_dish_type: "dish",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: true,
+        person_b_office_next_day: true,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: "existing-special",
+        date: tuesdayKey,
+        main_dish_id: null,
+        main_dish_type: "eating_out",
+        side_dish_ids: [],
+        dessert_dish_id: null,
+        has_guests: false,
+        person_a_office_next_day: true,
+        person_b_office_next_day: true,
+        locked: false,
+        is_blocked: false,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ] as MealPlanRow[];
+
+    render(<PlannerPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main: Manual Existing")).toBeInTheDocument();
+      expect(screen.getByText("Special: Eating Out")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Auto-Plan: Unplanned Only" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Main: Manual Existing")).toBeInTheDocument();
+      expect(screen.getByText("Special: Eating Out")).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Change" }).length).toBe(14);
     });
   });
 
