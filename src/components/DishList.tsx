@@ -33,20 +33,6 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
     };
   }, []);
 
-  if (dishes.length === 0) {
-    return (
-      <Card className="surface-panel">
-        <CardContent className="state-message">
-        <div>
-          <div>🍽️</div>
-          <h3 className="section-title">No dishes yet</h3>
-          <p className="state-info">Get started by adding your first dish</p>
-        </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const getStatusBadge = (status: string) => {
     const styles = {
       enabled: "badge badge-primary",
@@ -141,6 +127,20 @@ export function DishList({ dishes, onEdit, onDelete }: DishListProps) {
 
     return sortDirection === "asc" ? "↑" : "↓";
   };
+
+  if (dishes.length === 0) {
+    return (
+      <Card className="surface-panel">
+        <CardContent className="state-message">
+          <div>
+            <div>🍽️</div>
+            <h3 className="section-title">No dishes yet</h3>
+            <p className="state-info">Get started by adding your first dish</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="surface-panel">
