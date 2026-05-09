@@ -629,6 +629,36 @@ a {
   margin: 4px 0;
 }
 
+.ui-dropdown-content {
+  z-index: 70;
+  min-width: 10rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: 4px;
+}
+
+.ui-dropdown-item {
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 7px 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: default;
+}
+
+.ui-dropdown-item:focus {
+  background: var(--surface-muted);
+  outline: none;
+}
+
+.ui-dropdown-item[data-disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .ui-dialog-overlay {
   position: fixed;
   inset: 0;
@@ -863,6 +893,28 @@ a {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.planner-split-button {
+  display: inline-flex;
+}
+
+.planner-split-button .ui-button {
+  border-radius: 0;
+}
+
+.planner-split-button .ui-button:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.planner-split-button .ui-button:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.planner-split-button-toggle {
+  border-left: none;
 }
 
 .planner-meal-editor {

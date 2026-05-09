@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { useDishes } from "../hooks/useDishes";
 import { ensureRulesConfigSeeded, type RuleConfigRow } from "../lib/rulesConfig";
 import { supabase } from "../lib/supabase";
@@ -10,6 +11,7 @@ import type { Dish } from "../types/dish";
 import type { Database } from "../types/database";
 import { DEFAULT_RULES, type Rule, type RuleType } from "../types/rule";
 import { rankDishesForDay, scoreDishForDay, type AppliedRuleResult } from "../utils/scoringEngine";
+import { ChevronDown } from "lucide-react";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
@@ -25,6 +27,7 @@ type MealOption = {
 
 type MealEditorTab = "main" | "sides" | "dessert";
 type MealSortMode = "name" | "score";
+type AutoSuggestMode = "unplanned" | "selected" | "all";
 
 type DayMealAssignment = {
   special: MealOption | null;
@@ -121,6 +124,7 @@ export function PlannerPage() {
   const [configuredRules, setConfiguredRules] = useState<Rule[]>(DEFAULT_RULES);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [autoSuggestMessage, setAutoSuggestMessage] = useState<string | null>(null);
+  const [autoSuggestMode, setAutoSuggestMode] = useState<AutoSuggestMode>("unplanned");
   const [selectedDaysByDate, setSelectedDaysByDate] = useState<Record<string, boolean>>({});
   const [dayEditorOpen, setDayEditorOpen] = useState(false);
   const [dayEditorDate, setDayEditorDate] = useState<Date | null>(null);
@@ -227,6 +231,10 @@ export function PlannerPage() {
   const hasAnyAssignedMeal = (meal: DayMealAssignment | undefined) => {
     if (!meal) return false;
     return meal.special !== null || meal.main !== null || meal.sides.length > 0 || meal.dessert !== null;
+  };
+
+  const hasNoMainOrSpecial = (meal: DayMealAssignment | undefined) => {
+    return !meal || (meal.main === null && meal.special === null);
   };
 
   const normalizeOfficeDays = (input: unknown): DefaultOfficeDays => {
@@ -647,11 +655,11 @@ export function PlannerPage() {
     if (!assignment) return "No meal planned";
 
     if (assignment.special?.id === "EATING_OUT") {
-      return "Special meal: Eating Out (never auto-suggested)";
+      return "Special meal: Eating Out (never auto-planned)";
     }
 
     if (assignment.main?.id === "LEFTOVERS") {
-      return "Special meal: Leftovers (manual-only, never auto-suggested)";
+      return "Special meal: Leftovers (manual-only, never auto-planned)";
     }
 
     if (!assignment.main) {
@@ -662,7 +670,7 @@ export function PlannerPage() {
 
     const selected = ranked.find((entry) => entry.dish.id === assignment.main?.id);
     if (!selected) {
-      return `${assignment.main.name}\nManual or non-auto-suggestable main dish`;
+      return `${assignment.main.name}\nManual or non-auto-plannable main dish`;
     }
 
     const rank = ranked.findIndex((entry) => entry.dish.id === assignment.main?.id) + 1;
@@ -772,23 +780,30 @@ export function PlannerPage() {
         ...prev,
         ...suggestions,
       }));
-      setAutoSuggestFeedback(`Suggested meals for ${operations.length} day${operations.length === 1 ? "" : "s"}`);
+      setAutoSuggestFeedback(`Auto-Planned meals for ${operations.length} day${operations.length === 1 ? "" : "s"}`);
     } catch (suggestError) {
-      console.error("Error auto-suggesting meals:", suggestError);
-      setAutoSuggestFeedback("Auto-suggest failed");
-      setPlannerActionError(getErrorMessage(suggestError, "Failed to auto-suggest meals."));
+      console.error("Error auto-planning meals:", suggestError);
+      setAutoSuggestFeedback("Auto-Plan failed");
+      setPlannerActionError(getErrorMessage(suggestError, "Failed to auto-plan meals."));
     } finally {
       setBusyAction(null);
     }
   };
 
-  const autoSuggestAllDays = async () => {
-    await autoSuggestForDateKeys(days.map((date) => toDateKey(date)));
+  const runAutoPlan = async (mode: AutoSuggestMode) => {
+    const dateKeysInView = days.map((date) => toDateKey(date));
+    const dateKeys = mode === "selected" ? selectedDateKeys : dateKeysInView;
+    const unplannedDateKeys = dateKeys.filter((dateKey) => hasNoMainOrSpecial(assignedMealsByDate[dateKey]));
+    const dateKeysToSuggest = mode === "unplanned" ? unplannedDateKeys : dateKeys;
+    await autoSuggestForDateKeys(dateKeysToSuggest);
+    if (mode === "selected") {
+      setSelectedDaysByDate({});
+    }
   };
 
-  const autoSuggestSelectedDays = async () => {
-    await autoSuggestForDateKeys(selectedDateKeys);
-    setSelectedDaysByDate({});
+  const runAutoPlanWithMode = async (mode: AutoSuggestMode) => {
+    setAutoSuggestMode(mode);
+    await runAutoPlan(mode);
   };
 
   const toggleDaySelection = (dateKey: string, checked: boolean) => {
@@ -1249,6 +1264,12 @@ export function PlannerPage() {
     return count + (hasMeal && !isLocked ? 1 : 0);
   }, 0);
   const isBusy = busyAction !== null;
+  const autoPlanLabelByMode: Record<AutoSuggestMode, string> = {
+    unplanned: "Unplanned Only",
+    selected: "Selected Days",
+    all: "All Days",
+  };
+  const disableAutoPlanControl = plannerLoading || isBusy;
 
   return (
     <div className="page-root">
@@ -1263,18 +1284,32 @@ export function PlannerPage() {
         <CardHeader className="section-header-row">
           <CardTitle>Week of {rangeLabel}</CardTitle>
           <div className="planner-toolbar-actions">
-            <Button type="button" variant="outline" size="sm" onClick={autoSuggestAllDays} disabled={plannerLoading || isBusy}>
-              Auto-Suggest All
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={autoSuggestSelectedDays}
-              disabled={plannerLoading || isBusy || selectedDateKeys.length === 0}
-            >
-              Auto-Suggest Selected
-            </Button>
+            <div className="planner-split-button">
+              <Button type="button" variant="outline" size="sm" onClick={() => void runAutoPlan(autoSuggestMode)} disabled={disableAutoPlanControl}>
+                Auto-Plan: {autoPlanLabelByMode[autoSuggestMode]}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="planner-split-button-toggle"
+                    aria-label="Open Auto-Plan mode options"
+                    disabled={disableAutoPlanControl}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => void runAutoPlanWithMode("unplanned")}>Unplanned Only</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void runAutoPlanWithMode("selected")} disabled={selectedDateKeys.length === 0}>
+                    Selected Days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void runAutoPlanWithMode("all")}>All Days</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -1401,7 +1436,7 @@ export function PlannerPage() {
                         {dayMetadata.sebOfficeNextDay && <span title="Seb goes to office the next day">🏢Seb</span>}
                         {dayMetadata.sherryOfficeNextDay && <span title="Sherry goes to office the next day">🏢Sherry</span>}
                         {dayMetadata.hasGuests && <span title="Guests are coming for this day">👥</span>}
-                        {isLocked && <span title="This day is locked from auto-suggest">🔒</span>}
+                        {isLocked && <span title="This day is locked from auto-plan">🔒</span>}
                       </div>
                     )}
                     {assignedMeal ? (
@@ -1544,10 +1579,10 @@ export function PlannerPage() {
                               ? `Score ${scored.score} · ${buildCompactViolationSummary(scored.appliedRules)}`
                               : "Manual only";
                           const detailsTitle = meal.id === "LEFTOVERS"
-                            ? "Leftovers (manual-only, excluded from auto-suggest scoring)"
+                            ? "Leftovers (manual-only, excluded from auto-plan scoring)"
                             : scored
                               ? `Score: ${scored.score}\n${buildRuleSummary(scored.appliedRules)}`
-                              : `${meal.name}\nManual-only or non-auto-suggestable main dish`;
+                              : `${meal.name}\nManual-only or non-auto-plannable main dish`;
 
                           return (
                             <Button
